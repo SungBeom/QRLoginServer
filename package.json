@@ -1,0 +1,17 @@
+{
+  "name": "LoginServerBP",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/SungBeom/LoginServerBP.git",
+  "author": "SungBeom <psb_94@naver.com>",
+  "license": "MIT",
+  "dependencies": {
+    "koa": "^2.11.0",
+    "koa-router": "^7.4.0",
+    "mysql": "^2.17.1",
+    "mysql2": "^2.1.0",
+    "nodemon": "^2.0.2",
+    "sequelize": "^5.21.3",
+    "sequelize-cli": "^5.5.1"
+  }
+}
