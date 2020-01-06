@@ -53,4 +53,22 @@ api.get('/users/:uId', async (ctx, next) => {
     });
 });
 
+api.delete('/users', (ctx, next) => {
+    console.log(ctx.body = "How to Use: [DELETE]/users/:userId\nDelete a user with 'userId'");
+});
+
+api.delete('/users/:uId', async (ctx, next) => {
+    const { uId } = ctx.params;
+
+    await model.sequelize.models.Users.destroy({
+        where: { userId: uId }
+    }).then(() => {
+        console.log("Delete Success");
+        ctx.status = 200;
+    }).catch(err => {
+        console.log(err);
+        ctx.status = 500;
+    });
+});
+
 module.exports = api;
