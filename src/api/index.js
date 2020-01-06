@@ -4,9 +4,9 @@ const model = require('../database/models/index.js');
 const api = new Router();
 
 model.sequelize.sync().then(() => {
-    console.log("DB 연결 성공");
+    console.log("DB connection success");
 }).catch(err => {
-    console.log("DB 연결 실패");
+    console.log("DB connection failed");
     console.log(err);
 });
 
@@ -14,6 +14,9 @@ api.get('/', (ctx, next) => {
     ctx.body = "Connected";
 });
 
+// 회원 가입 API
+// req: uId(신규 유저 Id), uPw(신규 우저 Pw), uName(신규 유저 이름), uEngName(신규 유저 영어 이름)
+// res: 성공 - OK / 실패 - Fail message / 에러 - Error message
 api.post('/signup', async (ctx, next) => {
     const { uId, uPw, uName, uEngName } = ctx.request.body;
 
@@ -22,16 +25,20 @@ api.post('/signup', async (ctx, next) => {
     }).then(() => {
         ctx.status = 200;
     }).catch(err => {
+        ctx.body = "This information is not available.[duplicate userId, type mismatch, missing information]";
         console.log(err);
-        console.log(ctx.body = "회원가입이 불가능한 정보입니다.[userID 중복, 타입 불일치, 정보 누락]");
         ctx.status = 500;
     });
 });
 
+// 회원 검색 API[안내]
 api.get('/users', (ctx, next) => {
-    console.log(ctx.body = "How to Use: [GET]/users/:userId\nSearch for user with id 'userId'");
+    console.log(ctx.body = "How to Use: [GET]/users/:userId\nSearch for a user by 'userId'");
 });
 
+// 회원 검색 API
+// req: uId(검색하려는 유저 Id)
+// res: 성공 - User info / 실패 - Fail message / 에러 - Error message
 api.get('/users/:uId', async (ctx, next) => {
     const { uId } = ctx.params;
 
@@ -44,7 +51,7 @@ api.get('/users/:uId', async (ctx, next) => {
         }
         else {
             console.log("Search Failed");
-            ctx.body = "해당 ID를 가진 유저는 존재하지 않습니다.";
+            ctx.body = "There is no user with that Id.";
         }
         ctx.status = 200;
     }).catch(err => {
@@ -53,10 +60,15 @@ api.get('/users/:uId', async (ctx, next) => {
     });
 });
 
+// 회원 탈퇴 API[안내]
 api.delete('/users', (ctx, next) => {
     console.log(ctx.body = "How to Use: [DELETE]/users/:userId\nDelete a user with 'userId'");
 });
 
+// 회원 탈퇴 API
+// req: uId(탈퇴하려는 유저 Id)
+// res: 성공 - OK / 에러 - Error message
+// 이미 없는 Id라도 실패하는 경우 없이 OK
 api.delete('/users/:uId', async (ctx, next) => {
     const { uId } = ctx.params;
 
