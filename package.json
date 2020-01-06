@@ -1,5 +1,5 @@
 {
-  "name": "LoginServerBP",
+  "name": "login-server-bp",
   "version": "1.0.0",
   "main": "index.js",
   "repository": "https://github.com/SungBeom/LoginServerBP.git",
