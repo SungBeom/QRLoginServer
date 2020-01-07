@@ -33,14 +33,17 @@ api.delete('/cookies', (ctx, next) => {
 // req: uId(신규 유저 Id/string), uPw(신규 우저 Pw/string), uName(신규 유저 이름/string), uEngName(신규 유저 영어 이름/string)
 // res: 성공 - OK / 실패 - Fail message / 에러 - Error message
 api.post('/signup', async (ctx, next) => {
+    // uId, uPw, uName, uEngName이 undefined인 경우는 client에서 소거, type은 string으로 보장
     const { uId, uPw, uName, uEngName } = ctx.request.body;
 
+    // client 연산의 임시 코드
     if(uId === undefined || uPw === undefined || uName === undefined || uEngName === undefined) {
         ctx.body = "The required information is missing.\nHow to Use: [POST]/signup\nSign up for new users\n";
         ctx.body += "req: uId(신규 유저 Id/string), uPw(신규 유저 Pw/string), uName(신규 유저 이름/string), uEngName(신규 유저 영어 이름/string)";
         ctx.status = 400;
         return;
     }
+    // client 연산의 임시 코드
     else if(typeof(uId) !== "string" || typeof(uPw) !== "string" || typeof(uName) !== "string" || typeof(uEngName) !== "string") {
         ctx.body = "The type of information does not match.\nHow to Use: [POST]/signup\nSign up for new users\n";
         ctx.body += "req: uId(신규 유저 Id/string), uPw(신규 유저 Pw/string), uName(신규 유저 이름/string), uEngName(신규 유저 영어 이름/string)";
@@ -71,8 +74,27 @@ api.post('/signup', async (ctx, next) => {
     }
 });
 
+// 로그인 API
+// req: uId(기존 유저 Id/string), uPw(기존 유저 Pw/string)
+// res: 성공 - Success message / 실패 - Fail message / 에러 - Error message
 api.post('/users/login', async (ctx, next) => {
+    // uId, uPw가 undefined인 경우는 client에서 소거, type은 string으로 보장
     const { uId, uPw } = ctx.request.body;
+
+    // client 연산의 임시 코드
+    if(uId === undefined || uPw === undefined) {
+        ctx.body = "The required information is missing.\nHow to Use: [POST]/users/login\nLogin for registered user\n";
+        ctx.body += "req: uId(신규 유저 Id/string), uPw(신규 유저 Pw/string)";
+        ctx.status = 400;
+        return;
+    }
+    // client 연산의 임시 코드
+    else if(typeof(uId) !== "string" || typeof(uPw) !== "string") {
+        ctx.body = "The type of information does not match.\nHow to Use: [POST]/users/login\nLogin for registered user\n";
+        ctx.body += "req: uId(신규 유저 Id/string), uPw(신규 유저 Pw/string)";
+        ctx.status = 400;
+        return;
+    }
 
     let duplicate = true;
     await model.sequelize.models.Users.findOne({
@@ -94,6 +116,7 @@ api.post('/users/login', async (ctx, next) => {
         }).then(result => {
             if(result) {
                 console.log(ctx.body = "Login Success");
+                // 성공 이후 로직 구현
             }
             else {
                 console.log("Login Failed");
