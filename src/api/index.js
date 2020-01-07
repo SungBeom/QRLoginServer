@@ -71,6 +71,42 @@ api.post('/signup', async (ctx, next) => {
     }
 });
 
+api.post('/users/login', async (ctx, next) => {
+    const { uId, uPw } = ctx.request.body;
+
+    let duplicate = true;
+    await model.sequelize.models.Users.findOne({
+        where: { userId: uId }
+    }).then(result => {
+        if(!result) {
+            console.log(ctx.body = "There is no user with that Id.");
+            duplicate = false;
+        }
+        ctx.status = 200;
+    }).catch(err => {
+        console.log(err);
+        ctx.status = 500;
+    });
+
+    if(duplicate) {
+        await model.sequelize.models.Users.findOne({
+            where: { userPw: uPw }
+        }).then(result => {
+            if(result) {
+                console.log(ctx.body = "Login Success");
+            }
+            else {
+                console.log("Login Failed");
+                ctx.body = "The password is incorrect.";
+            }
+            ctx.status = 200;
+        }).catch(err => {
+            console.log(err);
+            ctx.status = 500;
+        });
+    }
+});
+
 // 회원 검색 API[안내]
 api.get('/users', (ctx, next) => {
     console.log(ctx.body = "How to Use: [GET]/users/:userId\nSearch for a user by 'userId'");
