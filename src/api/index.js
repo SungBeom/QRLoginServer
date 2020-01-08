@@ -34,7 +34,7 @@ api.delete('/cookies', (ctx, next) => {
 
 // 회원 가입 API
 // req: uId(신규 유저 Id/string), uPw(신규 우저 Pw/string), uName(신규 유저 이름/string), uEngName(신규 유저 영어 이름/string)
-// res: 성공 - OK / 실패 - Fail message / 에러 - Error message
+// res: 성공 - OK(200) / 실패 - Fail message(400) / 에러 - Error message(500)
 api.post('/signup', async (ctx, next) => {
     // uId, uPw, uName, uEngName이 undefined인 경우는 client에서 소거, type은 string으로 보장
     const { uId, uPw, uName, uEngName } = ctx.request.body;
@@ -85,7 +85,7 @@ api.post('/signup', async (ctx, next) => {
 
 // 로그인 API
 // req: uId(기존 유저 Id/string), uPw(기존 유저 Pw/string)
-// res: 성공 - OK / 실패 - Fail message / 에러 - Error message
+// res: 성공 - 찾은 경우:OK(200), 못 찾은 경우:Fail message(200) / 실패 - Fail message(400) / 에러 - Error message(500)
 api.post('/users/login', async (ctx, next) => {
     // uId, uPw가 undefined인 경우는 client에서 소거, type은 string으로 보장
     const { uId, uPw } = ctx.request.body;
@@ -148,7 +148,7 @@ api.get('/users', (ctx, next) => {
 
 // 회원 검색 API
 // req: uId(검색하려는 유저 Id/string)
-// res: 성공 - User info / 실패 - Fail message / 에러 - Error message
+// res: 성공 - 찾은 경우:User info(200), 못 찾은 경우:Fail message(200) / 실패 - Fail message(400) / 에러 - Error message(500)
 api.get('/users/:uId', async (ctx, next) => {
     const { uId } = ctx.params;
 
@@ -177,7 +177,7 @@ api.delete('/users', (ctx, next) => {
 
 // 회원 탈퇴 API
 // req: uId(탈퇴하려는 유저 Id/string)
-// res: 성공 - OK / 에러 - Error message
+// res: 성공 - (204) / 에러 - Error message(500)
 // 이미 없는 Id라도 실패하는 경우 없이 OK
 api.delete('/users/:uId', async (ctx, next) => {
     const { uId } = ctx.params;
