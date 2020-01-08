@@ -148,7 +148,8 @@ api.get('/users', (ctx, next) => {
 
 // 회원 검색 API
 // req: uId(검색하려는 유저 Id/string)
-// res: 성공 - 찾은 경우:User info(200), 못 찾은 경우:Fail message(200) / 실패 - Fail message(400) / 에러 - Error message(500)
+// res: 성공 - 찾은 경우:User info(200), 못 찾은 경우:Fail message(200) / 에러 - Error message(500)
+// Id가 undefined나 string 타입이 아닐 수 없으므로 실패 불가
 api.get('/users/:uId', async (ctx, next) => {
     const { uId } = ctx.params;
 
