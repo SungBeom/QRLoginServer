@@ -143,6 +143,20 @@ api.post('/users/login', async (ctx, next) => {
     }
 });
 
+// 인가 테스트 API
+api.get('/auth', (ctx, next) => {
+    let accessToken = ctx.cookies.get('accessToken');
+
+    if(accessToken !== undefined) {
+        let decodedToken = token.decodeToken(accessToken);
+        console.log("Welcome " + decodedToken.id + "!");
+    }
+    else {
+        console.log("You need to login.");
+    }
+    ctx.status = 200;
+});
+
 // 로그아웃 API
 // req: x
 // res: 성공 - OK(200)
