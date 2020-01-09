@@ -129,7 +129,7 @@ api.post('/users/login', async (ctx, next) => {
             if(result) {
                 console.log("[User]Login Success");
                 const accessToken = token.generateToken({ id: uId });
-                console.log(accessToken);
+                ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 24 * 1 });
             }
             else {
                 console.log("[User]Login Failed: incorrect password");
@@ -141,6 +141,31 @@ api.post('/users/login', async (ctx, next) => {
             ctx.status = 500;
         });
     }
+});
+
+// 인가 테스트 API
+api.get('/auth', (ctx, next) => {
+    let accessToken = ctx.cookies.get('accessToken');
+
+    if(accessToken !== undefined) {
+        let decodedToken = token.decodeToken(accessToken);
+        console.log("Welcome " + decodedToken.id + "!");
+    }
+    else {
+        console.log("You need to login.");
+    }
+    ctx.status = 200;
+});
+
+// 로그아웃 API
+// req: x
+// res: 성공 - OK(200)
+// cookie가 이미 없었더라도 실패하는 경우 없이 OK
+api.delete('/logout', (ctx, next) => {
+    ctx.cookies.set('accessToken', '');
+    ctx.cookies.set('accessToken.sig', '');
+    console.log("[User]Logout Success");
+    ctx.status = 200;
 });
 
 // 회원 검색 API[안내]
