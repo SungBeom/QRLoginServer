@@ -143,6 +143,17 @@ api.post('/users/login', async (ctx, next) => {
     }
 });
 
+// 로그아웃 API
+// req: x
+// res: 성공 - OK(200)
+// cookie가 이미 없었더라도 실패하는 경우 없이 OK
+api.delete('/logout', (ctx, next) => {
+    ctx.cookies.set('accessToken', '');
+    ctx.cookies.set('accessToken.sig', '');
+    console.log("[User]Logout Success");
+    ctx.status = 200;
+});
+
 // 회원 검색 API[안내]
 api.get('/users', (ctx, next) => {
     console.log(ctx.body = "How to Use: [GET]/users/:userId\nSearch for a user by 'userId'");
