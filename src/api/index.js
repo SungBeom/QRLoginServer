@@ -1,5 +1,6 @@
 const Router = require('koa-router');
-const model = require('../database/models/index.js');
+const model = require('../database/models');
+const token = require('../lib/token');
 
 const api = new Router();
 
@@ -127,7 +128,8 @@ api.post('/users/login', async (ctx, next) => {
         }).then(result => {
             if(result) {
                 console.log("[User]Login Success");
-                // 성공 이후 로직 구현
+                const accessToken = token.generateToken({ id: uId });
+                console.log(accessToken);
             }
             else {
                 console.log("[User]Login Failed: incorrect password");
