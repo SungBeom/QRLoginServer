@@ -129,7 +129,7 @@ api.post('/users/login', async (ctx, next) => {
             if(result) {
                 console.log("[User]Login Success");
                 const accessToken = token.generateToken({ id: uId });
-                console.log(accessToken);
+                ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 24 * 1 });
             }
             else {
                 console.log("[User]Login Failed: incorrect password");
