@@ -1,6 +1,7 @@
 const Router = require('koa-router');
 const model = require('../database/models');
 const token = require('../lib/token');
+const QRCode = require('qrcode');  // 모듈화 필요
 
 const api = new Router();
 
@@ -11,9 +12,24 @@ model.sequelize.sync().then(() => {
     console.log(err);
 });
 
-api.get('/', (ctx, next) => {
-    ctx.body = "Connected";
-    ctx.status = 200;
+// 임시로 API call을 하는 QRCode를 노출
+api.get('/', async (ctx, next) => {
+    const QRContent = "localhost:" + process.env.SERVER_PORT + "/auth";
+    const dataURL = QRCode.toDataURL(QRContent, { width: 300, color: { dark: "#222222FF", light: "#F0F8FFFF" } });
+
+    await dataURL.then(url => {
+        ctx.body = `<!DOCTYPE html>
+        <html>
+            <head></head>
+            <body>
+                <image id="qrcode" src="${url}">
+            </body>
+        </html>`;
+        ctx.status = 200;
+    }).catch(err => {
+        console.log(err);
+        ctx.status = 500;
+    });
 });
 
 // 쿠키 생성 테스트 API

@@ -1,9 +1,10 @@
+<!DOCTYPE html>
 <html>
     <body>
         <canvas id="canvas"></canvas>
         <script src="../../node_modules/qrcode/build/qrcode.min.js"></script>
         <script>
-            QRCode.toCanvas(document.getElementById('canvas'), 'QR Code Test', { width: 300, color: { dark: "#222222FF", light: "#F0F8FFFF" } }, err => {
+            QRCode.toCanvas(document.getElementById('canvas'), 'localhost:3000/auth', { width: 300, color: { dark: "#222222FF", light: "#F0F8FFFF" } }, err => {
                 if(err) console.log(err);
                 else console.log('success!');
             });
