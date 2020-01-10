@@ -1,5 +1,7 @@
 const Router = require('koa-router');
-const model = require('../database/models/index.js');
+const model = require('../database/models');
+const token = require('../lib/token');
+const QRCode = require('qrcode');  // 모듈화 필요
 
 const api = new Router();
 
@@ -10,9 +12,24 @@ model.sequelize.sync().then(() => {
     console.log(err);
 });
 
-api.get('/', (ctx, next) => {
-    ctx.body = "Connected";
-    ctx.status = 200;
+// 임시로 API call을 하는 QRCode를 노출
+api.get('/', async (ctx, next) => {
+    const QRContent = "localhost:" + process.env.SERVER_PORT + "/auth";
+    const dataURL = QRCode.toDataURL(QRContent, { width: 300, color: { dark: "#222222FF", light: "#F0F8FFFF" } });
+
+    await dataURL.then(url => {
+        ctx.body = `<!DOCTYPE html>
+        <html>
+            <head></head>
+            <body>
+                <image id="qrcode" src="${url}">
+            </body>
+        </html>`;
+        ctx.status = 200;
+    }).catch(err => {
+        console.log(err);
+        ctx.status = 500;
+    });
 });
 
 // 쿠키 생성 테스트 API
@@ -127,7 +144,8 @@ api.post('/users/login', async (ctx, next) => {
         }).then(result => {
             if(result) {
                 console.log("[User]Login Success");
-                // 성공 이후 로직 구현
+                const accessToken = token.generateToken({ id: uId });
+                ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 24 * 1 });
             }
             else {
                 console.log("[User]Login Failed: incorrect password");
@@ -139,6 +157,31 @@ api.post('/users/login', async (ctx, next) => {
             ctx.status = 500;
         });
     }
+});
+
+// 인가 테스트 API
+api.get('/auth', (ctx, next) => {
+    let accessToken = ctx.cookies.get('accessToken');
+
+    if(accessToken !== undefined) {
+        let decodedToken = token.decodeToken(accessToken);
+        console.log("Welcome " + decodedToken.id + "!");
+    }
+    else {
+        console.log("You need to login.");
+    }
+    ctx.status = 200;
+});
+
+// 로그아웃 API
+// req: x
+// res: 성공 - OK(200)
+// cookie가 이미 없었더라도 실패하는 경우 없이 OK
+api.delete('/logout', (ctx, next) => {
+    ctx.cookies.set('accessToken', '');
+    ctx.cookies.set('accessToken.sig', '');
+    console.log("[User]Logout Success");
+    ctx.status = 200;
 });
 
 // 회원 검색 API[안내]
