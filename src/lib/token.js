@@ -1,4 +1,4 @@
-const jwt = require('jsonWebtoken');
+const jwt = require('jsonwebtoken');
 
 module.exports = {
     generateToken(payload) {

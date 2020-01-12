@@ -14,7 +14,7 @@ model.sequelize.sync().then(() => {
 
 // 임시로 API call을 하는 QRCode를 노출
 api.get('/', async (ctx, next) => {
-    const QRContent = "localhost:" + process.env.SERVER_PORT + "/auth";
+    const QRContent = process.env.SERVER_IP + ":" + process.env.SERVER_PORT + "/auth";
     const dataURL = QRCode.toDataURL(QRContent, { width: 300, color: { dark: "#222222FF", light: "#F0F8FFFF" } });
 
     await dataURL.then(url => {
