@@ -166,7 +166,7 @@ api.post('/users/login', async (ctx, next) => {
 
     if(duplicate) {
         await model.sequelize.models.Users.findOne({
-            where: { userPw: uPw }
+            where: { userId: uId, userPw: uPw }
         }).then(result => {
             if(result) {
                 console.log("[User]Login Success");
