@@ -226,6 +226,9 @@ api.delete('/users', (ctx, next) => {
 api.delete('/users/:uId', async (ctx, next) => {
     const { uId } = ctx.params;
 
+    ctx.cookies.set('accessToken', '');
+    ctx.cookies.set('accessToken.sig', '');
+
     await model.sequelize.models.Users.destroy({
         where: { userId: uId }
     }).then(() => {
