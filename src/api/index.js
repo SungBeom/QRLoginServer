@@ -38,6 +38,19 @@ api.get('/', async (ctx, next) => {
             ctx.status = 500;
         });
 
+        await setInterval(() => {
+            model.sequelize.models.Tokens.findOne({
+                where: { tokenId: randomToken, loginStatus: true },
+                attributes: [ 'loginId' ]
+            }).then(result => {
+                if(result) console.log(result.loginId);
+                // 여기에서 로그인이 성공할 수 있도록 해야함
+            }).catch(err => {
+                console.log(err);
+                ctx.status = 500;
+            })
+        }, 1000);
+
         ctx.status = 200;
     }).catch(err => {
         console.log(err);
