@@ -191,10 +191,12 @@ api.get('/auth', (ctx, next) => {
 
     if(accessToken !== undefined) {
         let decodedToken = token.decodeToken(accessToken);
-        console.log("Welcome " + decodedToken.id + "!");
+        console.log("[Auth]Login Permission");
+        ctx.body = "Welcome " + decodedToken.id + "!";
     }
     else {
-        console.log("You need to login.");
+        console.log("[Auth]Login Denied");
+        ctx.body = "You need to login.";
     }
     ctx.status = 200;
 });
