@@ -2,6 +2,7 @@ const Router = require('koa-router');
 const model = require('../database/models');
 const token = require('../lib/token');
 const QRCode = require('qrcode');  // 모듈화 필요
+const crypto = require('crypto');
 
 const api = new Router();
 
@@ -17,7 +18,7 @@ api.get('/', async (ctx, next) => {
     const QRContent = process.env.SERVER_IP + ":" + process.env.SERVER_PORT + "/auth";
     const dataURL = QRCode.toDataURL(QRContent, { width: 300, color: { dark: "#222222FF", light: "#F0F8FFFF" } });
 
-    await dataURL.then(url => {
+    await dataURL.then(async url => {
         ctx.body = `<!DOCTYPE html>
         <html>
             <head></head>
@@ -25,6 +26,31 @@ api.get('/', async (ctx, next) => {
                 <image id="qrcode" src="${url}">
             </body>
         </html>`;
+
+        const randomToken = crypto.randomBytes(64).toString('hex');
+        
+        await model.sequelize.models.Tokens.create({
+            tokenId: randomToken
+        }).then(() => {
+            console.log("[Auth]Create Token Success");
+        }).catch(err => {
+            console.log(err);
+            ctx.status = 500;
+        });
+
+        await setInterval(() => {
+            model.sequelize.models.Tokens.findOne({
+                where: { tokenId: randomToken, loginStatus: true },
+                attributes: [ 'loginId' ]
+            }).then(result => {
+                if(result) console.log(result.loginId);
+                // 여기에서 로그인이 성공할 수 있도록 해야함
+            }).catch(err => {
+                console.log(err);
+                ctx.status = 500;
+            })
+        }, 1000);
+
         ctx.status = 200;
     }).catch(err => {
         console.log(err);
@@ -140,7 +166,7 @@ api.post('/users/login', async (ctx, next) => {
 
     if(duplicate) {
         await model.sequelize.models.Users.findOne({
-            where: { userPw: uPw }
+            where: { userId: uId, userPw: uPw }
         }).then(result => {
             if(result) {
                 console.log("[User]Login Success");
@@ -165,10 +191,12 @@ api.get('/auth', (ctx, next) => {
 
     if(accessToken !== undefined) {
         let decodedToken = token.decodeToken(accessToken);
-        console.log("Welcome " + decodedToken.id + "!");
+        console.log("[Auth]Login Permission");
+        ctx.body = "Welcome " + decodedToken.id + "!";
     }
     else {
-        console.log("You need to login.");
+        console.log("[Auth]Login Denied");
+        ctx.body = "You need to login.";
     }
     ctx.status = 200;
 });
@@ -225,6 +253,9 @@ api.delete('/users', (ctx, next) => {
 // 이미 없는 Id라도 실패하는 경우 없이 OK
 api.delete('/users/:uId', async (ctx, next) => {
     const { uId } = ctx.params;
+
+    ctx.cookies.set('accessToken', '');
+    ctx.cookies.set('accessToken.sig', '');
 
     await model.sequelize.models.Users.destroy({
         where: { userId: uId }
