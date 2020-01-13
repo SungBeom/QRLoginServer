@@ -2,6 +2,7 @@ const Router = require('koa-router');
 const model = require('../database/models');
 const token = require('../lib/token');
 const QRCode = require('qrcode');  // 모듈화 필요
+const crypto = require('crypto');
 
 const api = new Router();
 
@@ -17,7 +18,7 @@ api.get('/', async (ctx, next) => {
     const QRContent = process.env.SERVER_IP + ":" + process.env.SERVER_PORT + "/auth";
     const dataURL = QRCode.toDataURL(QRContent, { width: 300, color: { dark: "#222222FF", light: "#F0F8FFFF" } });
 
-    await dataURL.then(url => {
+    await dataURL.then(async url => {
         ctx.body = `<!DOCTYPE html>
         <html>
             <head></head>
@@ -25,6 +26,18 @@ api.get('/', async (ctx, next) => {
                 <image id="qrcode" src="${url}">
             </body>
         </html>`;
+
+        const randomToken = crypto.randomBytes(64).toString('hex');
+        
+        await model.sequelize.models.Tokens.create({
+            tokenId: randomToken
+        }).then(() => {
+            console.log("[Auth]Create Token Success");
+        }).catch(err => {
+            console.log(err);
+            ctx.status = 500;
+        });
+
         ctx.status = 200;
     }).catch(err => {
         console.log(err);
