@@ -220,6 +220,52 @@ api.get('/tokens', async (ctx, next) => {
     ctx.status = 200;
 });
 
+// 로그인 확인 API
+// req: tId(QR 코드로 발급받으 토큰 Id/string)
+// res: 성공 - 로그인 확인이 되었고 QR 코드가 정상적으로 생성되었으며 해당 QR 코드를 인식한 경우:OK(200) /
+//      실패 - 로그인이 되지 않은 경우:Fail message(401), 로그인이 확인되었으나 QR 코드의 토큰이 다른 경우: Fail message(404)
+// DB에 해당 토큰이 있는지 확인하여, 있다면 쿠키를 이용해 누가 로그인 헀는지 변경
+api.get('/auth/:tId', async (ctx, next) => {
+    const accessToken = ctx.cookies.get('accessToken');
+    const { tId } = ctx.params;
+
+    if(accessToken !== undefined) {
+        await model.sequelize.models.Tokens.findOne({
+            where: { tokenId: tId }
+        }).then(async result => {
+            if(result) {
+                await model.sequelize.models.Tokens.update({
+                    loginStatus: true, loginId: accessToken
+                }, { where: { tokenId: tId }
+                }).then(() => {
+                    console.log("[Auth]QR Login Success");
+                    ctx.status = 200;
+                }).catch(err => {
+                    console.log(err);
+                    ctx.status = 500;
+                });
+            }
+            else {
+                // random 토큰이 있는데 QR로 인식한 토큰이 아닐 경우
+                // 인증된 사용자가 고의적인 url 입력할 가능성 있음
+                console.log("[Auth]Invalid Token");
+                ctx.body = "Invalid token."
+                ctx.status = 404;
+            }
+        }).catch(err => {
+            console.log(err);
+            ctx.status = 500;
+        });
+    }
+    else {
+        // access 토큰이 없는데 접근하는 경우
+        // access 토큰 발급을 위해 로그인이 필요함
+        console.log("[Auth]Login Denied");
+        ctx.body = "You need to login.";
+        ctx.status = 401;
+    }
+});
+
 // 로그아웃 API
 // req: x
 // res: 성공 - OK(200)
