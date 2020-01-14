@@ -234,6 +234,7 @@ api.get('/tokens/:tId', async (ctx, next) => {
         console.log(result);
 
         if(result) {
+            // accessToken 발급해주어야 함
             ctx.body = { loginId: result.loginId };
         }
         else {
