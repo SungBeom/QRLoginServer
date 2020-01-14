@@ -1,7 +1,7 @@
 const Koa = require('koa');
 const Router = require('koa-router');
 const bodyParser = require('koa-bodyparser');
-const session = require('koa-session');
+// const session = require('koa-session');
 require('dotenv').config();
 
 const app = new Koa();
