@@ -11,4 +11,12 @@ fetch("http://localhost:3000/tokens")
 
 QRCode.toCanvas(canvas, "http://localhost:3000/auth/" + QRContent, { width: 300, color: { dark: "#222222FF", light: "#F0F8FFFF" } }, err => {
     if(err) console.log(err);
+
+    setInterval(() => {
+        fetch("http://localhost:3000/tokens/" + QRContent)
+        .then(res => res.json())
+        .then(data => {
+            console.log(data);
+        });
+    }, 1000);
 });
