@@ -2,6 +2,7 @@ const Router = require('koa-router');
 const model = require('../database/models');
 const token = require('../lib/token');
 const QRCode = require('qrcode');  // 모듈화 필요
+const crypto = require('crypto');
 
 const api = new Router();
 
@@ -13,11 +14,12 @@ model.sequelize.sync().then(() => {
 });
 
 // 임시로 API call을 하는 QRCode를 노출
+// 랜덤 token을 이용해 QR 코드를 생성해주도록 변경하기
 api.get('/', async (ctx, next) => {
     const QRContent = process.env.SERVER_IP + ":" + process.env.SERVER_PORT + "/auth";
     const dataURL = QRCode.toDataURL(QRContent, { width: 300, color: { dark: "#222222FF", light: "#F0F8FFFF" } });
 
-    await dataURL.then(url => {
+    await dataURL.then(async url => {
         ctx.body = `<!DOCTYPE html>
         <html>
             <head></head>
@@ -25,6 +27,31 @@ api.get('/', async (ctx, next) => {
                 <image id="qrcode" src="${url}">
             </body>
         </html>`;
+
+        // const randomToken = crypto.randomBytes(64).toString('hex');
+        
+        // await model.sequelize.models.Tokens.create({
+        //     tokenId: randomToken
+        // }).then(() => {
+        //     console.log("[Auth]Create Token Success");
+        // }).catch(err => {
+        //     console.log(err);
+        //     ctx.status = 500;
+        // });
+
+        // await setInterval(() => {
+        //     model.sequelize.models.Tokens.findOne({
+        //         where: { tokenId: randomToken, loginStatus: true },
+        //         attributes: [ 'loginId' ]
+        //     }).then(result => {
+        //         if(result) console.log(result.loginId);
+        //         // 여기에서 로그인이 성공할 수 있도록 해야함
+        //     }).catch(err => {
+        //         console.log(err);
+        //         ctx.status = 500;
+        //     })
+        // }, 1000);
+
         ctx.status = 200;
     }).catch(err => {
         console.log(err);
@@ -140,7 +167,7 @@ api.post('/users/login', async (ctx, next) => {
 
     if(duplicate) {
         await model.sequelize.models.Users.findOne({
-            where: { userPw: uPw }
+            where: { userId: uId, userPw: uPw }
         }).then(result => {
             if(result) {
                 console.log("[User]Login Success");
@@ -165,12 +192,105 @@ api.get('/auth', (ctx, next) => {
 
     if(accessToken !== undefined) {
         let decodedToken = token.decodeToken(accessToken);
-        console.log("Welcome " + decodedToken.id + "!");
+        console.log("[Auth]Login Permission");
+        ctx.body = "Welcome " + decodedToken.id + "!";
     }
     else {
-        console.log("You need to login.");
+        console.log("[Auth]Login Denied");
+        ctx.body = "You need to login.";
     }
     ctx.status = 200;
+});
+
+// random 토큰 생성 API
+// req: x
+// res: 성공 - token(200) / 에러: Error message(500)
+api.get('/tokens', async (ctx, next) => {
+    const randomToken = crypto.randomBytes(64).toString('hex');
+
+    await model.sequelize.models.Tokens.create({
+        tokenId: randomToken
+    }).then(result => {
+        console.log("[Auth]Create Token Success");
+        ctx.body = { randomToken: randomToken };
+    }).catch(err => {
+        console.log(err);
+        ctx.status = 500;
+    });
+
+    ctx.status = 200;
+});
+
+// QR 로그인 확인 API
+// req: tId(QR 코드로 생성 시에 만들어진 토큰)
+// res: 성공 - 로그인이 확인된 경우: 유저의 ID(200), 로그인이 확인되지 않은 경우: null(200) / 에러 - Error message(500)
+api.get('/tokens/:tId', async (ctx, next) => {
+    const { tId } = ctx.params;
+
+    await model.sequelize.models.Tokens.findOne({
+        where: { tokenId: tId, loginStatus: true },
+        attributes: [ 'loginId' ]
+    }).then(result => {
+        console.log(result);
+
+        if(result) {
+            // accessToken 발급해주어야 함
+            ctx.body = { loginId: result.loginId };
+        }
+        else {
+            ctx.body = { loginId: null };
+        }
+    }).catch(err => {
+        console.log(err);
+        ctx.status = 500;
+    });
+    ctx.status = 200;
+});
+
+// QR 로그인 인증 API
+// req: tId(QR 코드로 발급받은 토큰 Id/string)
+// res: 성공 - 로그인 확인이 되었고 QR 코드가 정상적으로 생성되었으며 해당 QR 코드를 인식한 경우:OK(200) /
+//      실패 - 로그인이 되지 않은 경우:Fail message(401), 로그인이 확인되었으나 QR 코드의 토큰이 다른 경우: Fail message(404)
+// DB에 해당 토큰이 있는지 확인하여, 있다면 쿠키를 이용해 누가 로그인 헀는지 변경
+api.get('/auth/:tId', async (ctx, next) => {
+    const accessToken = ctx.cookies.get('accessToken');
+    const { tId } = ctx.params;
+
+    if(accessToken !== undefined) {
+        await model.sequelize.models.Tokens.findOne({
+            where: { tokenId: tId }
+        }).then(async result => {
+            if(result) {
+                await model.sequelize.models.Tokens.update({
+                    loginStatus: true, loginId: accessToken
+                }, { where: { tokenId: tId }
+                }).then(() => {
+                    console.log("[Auth]QR Login Success");
+                    ctx.status = 200;
+                }).catch(err => {
+                    console.log(err);
+                    ctx.status = 500;
+                });
+            }
+            else {
+                // random 토큰이 있는데 QR로 인식한 토큰이 아닐 경우
+                // 인증된 사용자가 고의적인 url 입력할 가능성 있음
+                console.log("[Auth]Invalid Token");
+                ctx.body = "Invalid token."
+                ctx.status = 404;
+            }
+        }).catch(err => {
+            console.log(err);
+            ctx.status = 500;
+        });
+    }
+    else {
+        // access 토큰이 없는데 접근하는 경우
+        // access 토큰 발급을 위해 로그인이 필요함
+        console.log("[Auth]Login Denied");
+        ctx.body = "You need to login.";
+        ctx.status = 401;
+    }
 });
 
 // 로그아웃 API
@@ -225,6 +345,9 @@ api.delete('/users', (ctx, next) => {
 // 이미 없는 Id라도 실패하는 경우 없이 OK
 api.delete('/users/:uId', async (ctx, next) => {
     const { uId } = ctx.params;
+
+    ctx.cookies.set('accessToken', '');
+    ctx.cookies.set('accessToken.sig', '');
 
     await model.sequelize.models.Users.destroy({
         where: { userId: uId }

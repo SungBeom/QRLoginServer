@@ -1,7 +1,8 @@
 const Koa = require('koa');
 const Router = require('koa-router');
 const bodyParser = require('koa-bodyparser');
-const session = require('koa-session');
+// const session = require('koa-session');
+const cors = require('@koa/cors');
 require('dotenv').config();
 
 const app = new Koa();
@@ -11,6 +12,7 @@ const api = require('./api');
 
 router.use(api.routes());
 
+app.use(cors());
 app.use(bodyParser());
 app.use(router.routes());
 app.use(router.allowedMethods());
