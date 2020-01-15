@@ -71,7 +71,7 @@ api.get('/login', (ctx, next) => {
             login로그인 페이지<br>
             <hr>
     
-             <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + `/users/login" method="post">
+             <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/users/login" method="post">
                 아이디 : <input type="text" name="uId"><br>
                 비밀번호 : <input type="password" name="uPw"><br>
                 <input type="submit" value="로그인">
