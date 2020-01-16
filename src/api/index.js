@@ -59,45 +59,6 @@ api.get('/', async (ctx, next) => {
     });
 });
 
-// 로그인 요청 테스트 API
-api.get('/login', (ctx, next) => {
-    ctx.body = `<!DOCTYPE html>
-    <html>
-        <head>
-            <title>로그인 페이지</title>
-            <meta charset="utf-8">
-        </head>
-        <body>
-            login로그인 페이지<br>
-            <hr>
-    
-             <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/users/login" method="post">
-                아이디 : <input type="text" name="uId"><br>
-                비밀번호 : <input type="password" name="uPw"><br>
-                <input type="submit" value="로그인">
-            </form>
-        </body>
-    </html>`;
-    ctx.status = 200;
-});
-
-// 쿠키 생성 테스트 API
-api.get('/cookies', (ctx, next) => {
-    // 하루동안 유지되는 쿠키 생성(Name: name, Value: value)
-    ctx.cookies.set('name', 'value', { httpOnly: false, maxAge: 1000 * 60 * 60 * 24 * 1 });
-    console.log("[Cookie]Create success");
-    ctx.body = "Create cookie test";  // 삭제 예정
-    ctx.status = 200;
-});
-
-// 쿠키 삭제 테스트 API
-api.delete('/cookies', (ctx, next) => {
-    ctx.cookies.set('name', '');
-    console.log("[Cookie]Delete success");
-    ctx.body = "Delete cookie test";  // 삭제 예정
-    ctx.status = 204;
-});
-
 // 회원 가입 API
 // req: uId(신규 유저 Id/string), uPw(신규 우저 Pw/string), uName(신규 유저 이름/string), uEngName(신규 유저 영어 이름/string)
 // res: 성공 - OK(200) / 실패 - Fail message(400) / 에러 - Error message(500)
@@ -147,6 +108,28 @@ api.post('/signup', async (ctx, next) => {
             ctx.status = 500;
         });
     }
+});
+
+// 로그인 요청 테스트 API
+api.get('/login', (ctx, next) => {
+    ctx.body = `<!DOCTYPE html>
+    <html>
+        <head>
+            <title>로그인 페이지</title>
+            <meta charset="utf-8">
+        </head>
+        <body>
+            login로그인 페이지<br>
+            <hr>
+    
+             <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/users/login" method="post">
+                아이디 : <input type="text" name="uId"><br>
+                비밀번호 : <input type="password" name="uPw"><br>
+                <input type="submit" value="로그인">
+            </form>
+        </body>
+    </html>`;
+    ctx.status = 200;
 });
 
 // 로그인 API
@@ -262,6 +245,21 @@ api.get('/tokens/:tId', async (ctx, next) => {
         else {
             ctx.body = { loginId: null };
         }
+    }).catch(err => {
+        console.log(err);
+        ctx.status = 500;
+    });
+    ctx.status = 200;
+});
+
+// random token 삭제 테스트 API
+api.delete('/tokens/:tId', async (ctx, next) => {
+    const { tId } = ctx.params;
+
+    await model.sequelize.models.Tokens.destroy({
+        where: { tokenId: tId }
+    }).then(() => {
+        console.log("[Auth]Delete Token Success");
     }).catch(err => {
         console.log(err);
         ctx.status = 500;
