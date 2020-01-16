@@ -257,12 +257,13 @@ api.get('/auth/:tId', async (ctx, next) => {
     const { tId } = ctx.params;
 
     if(accessToken !== undefined) {
+        let decodedToken = token.decodeToken(accessToken);
         await model.sequelize.models.Tokens.findOne({
             where: { tokenId: tId }
         }).then(async result => {
             if(result) {
                 await model.sequelize.models.Tokens.update({
-                    loginStatus: true, loginId: accessToken
+                    loginStatus: true, loginId: decodedToken.id
                 }, { where: { tokenId: tId }
                 }).then(() => {
                     console.log("[Auth]QR Login Success");
