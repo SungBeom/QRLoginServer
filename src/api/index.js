@@ -223,7 +223,7 @@ api.get('/tokens', async (ctx, next) => {
 
 // QR 로그인 확인 API
 // req: tId(QR 코드로 생성 시에 만들어진 토큰)
-// res: 성공 - 로그인이 확인된 경우: 유저의 ID(200), 로그인이 확인되지 않은 경우: null(200) / 에러 - Error message(500)
+// res: 성공 - 로그인이 확인된 경우: OK(200), 로그인이 확인되지 않은 경우: null(200) / 에러 - Error message(500)
 api.get('/tokens/:tId', async (ctx, next) => {
     const { tId } = ctx.params;
 
@@ -233,8 +233,8 @@ api.get('/tokens/:tId', async (ctx, next) => {
     }).then(result => {
 
         if(result) {
-            // accessToken 발급해주어야 함
-            ctx.body = { loginId: result.loginId };
+            const accessToken = token.generateToken({ id: result.loginId });
+            ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 24 * 1 });
         }
         else {
             ctx.body = { loginId: null };
