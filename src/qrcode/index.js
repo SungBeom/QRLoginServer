@@ -15,7 +15,10 @@ fetch("http://localhost:3000/tokens")
             .then(res2 => res2.json())
             .then(result => {
                 if(result.loginId !== null) {
-                    location.href = "success.html?uId=" + result.loginId;
+                    fetch("http://localhost:3000/tokens/" + QRContent.randomToken, { method: 'delete' })
+                    .then(() => {
+                        location.href = "success.html?uId=" + result.loginId;
+                    });
                 }
             });
         }, 1000);
