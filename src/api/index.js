@@ -41,7 +41,7 @@ api.get('/', async (ctx, next) => {
 
         // await setInterval(() => {
         //     model.sequelize.models.Tokens.findOne({
-        //         where: { tokenId: randomToken, loginStatus: true },
+        //         where: { tokenId: randomToken },
         //         attributes: [ 'loginId' ]
         //     }).then(result => {
         //         if(result) console.log(result.loginId);
@@ -228,10 +228,9 @@ api.get('/tokens/:tId', async (ctx, next) => {
     const { tId } = ctx.params;
 
     await model.sequelize.models.Tokens.findOne({
-        where: { tokenId: tId, loginStatus: true },
+        where: { tokenId: tId },
         attributes: [ 'loginId' ]
     }).then(result => {
-        console.log(result);
 
         if(result) {
             // accessToken 발급해주어야 함
@@ -263,7 +262,7 @@ api.get('/auth/:tId', async (ctx, next) => {
         }).then(async result => {
             if(result) {
                 await model.sequelize.models.Tokens.update({
-                    loginStatus: true, loginId: decodedToken.id
+                    loginId: decodedToken.id
                 }, { where: { tokenId: tId }
                 }).then(() => {
                     console.log("[Auth]QR Login Success");
