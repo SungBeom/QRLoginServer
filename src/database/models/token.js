@@ -5,10 +5,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       primaryKey: true
     },
-    loginStatus: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
-    },
     loginId: DataTypes.STRING
   }, {
     freezeTableName: true,

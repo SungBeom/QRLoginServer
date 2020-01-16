@@ -41,7 +41,7 @@ api.get('/', async (ctx, next) => {
 
         // await setInterval(() => {
         //     model.sequelize.models.Tokens.findOne({
-        //         where: { tokenId: randomToken, loginStatus: true },
+        //         where: { tokenId: randomToken },
         //         attributes: [ 'loginId' ]
         //     }).then(result => {
         //         if(result) console.log(result.loginId);
@@ -57,23 +57,6 @@ api.get('/', async (ctx, next) => {
         console.log(err);
         ctx.status = 500;
     });
-});
-
-// 쿠키 생성 테스트 API
-api.get('/cookies', (ctx, next) => {
-    // 하루동안 유지되는 쿠키 생성(Name: name, Value: value)
-    ctx.cookies.set('name', 'value', { httpOnly: false, maxAge: 1000 * 60 * 60 * 24 * 1 });
-    console.log("[Cookie]Create success");
-    ctx.body = "Create cookie test";  // 삭제 예정
-    ctx.status = 200;
-});
-
-// 쿠키 삭제 테스트 API
-api.delete('/cookies', (ctx, next) => {
-    ctx.cookies.set('name', '');
-    console.log("[Cookie]Delete success");
-    ctx.body = "Delete cookie test";  // 삭제 예정
-    ctx.status = 204;
 });
 
 // 회원 가입 API
@@ -127,6 +110,28 @@ api.post('/signup', async (ctx, next) => {
     }
 });
 
+// 로그인 요청 테스트 API
+api.get('/login', (ctx, next) => {
+    ctx.body = `<!DOCTYPE html>
+    <html>
+        <head>
+            <title>로그인 페이지</title>
+            <meta charset="utf-8">
+        </head>
+        <body>
+            login로그인 페이지<br>
+            <hr>
+    
+             <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/users/login" method="post">
+                아이디 : <input type="text" name="uId"><br>
+                비밀번호 : <input type="password" name="uPw"><br>
+                <input type="submit" value="로그인">
+            </form>
+        </body>
+    </html>`;
+    ctx.status = 200;
+});
+
 // 로그인 API
 // req: uId(기존 유저 Id/string), uPw(기존 유저 Pw/string)
 // res: 성공 - 찾은 경우:OK(200), 못 찾은 경우:Fail message(200) / 실패 - Fail message(400) / 에러 - Error message(500)
@@ -172,7 +177,7 @@ api.post('/users/login', async (ctx, next) => {
             if(result) {
                 console.log("[User]Login Success");
                 const accessToken = token.generateToken({ id: uId });
-                ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 24 * 1 });
+                ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
             }
             else {
                 console.log("[User]Login Failed: incorrect password");
@@ -223,23 +228,38 @@ api.get('/tokens', async (ctx, next) => {
 
 // QR 로그인 확인 API
 // req: tId(QR 코드로 생성 시에 만들어진 토큰)
-// res: 성공 - 로그인이 확인된 경우: 유저의 ID(200), 로그인이 확인되지 않은 경우: null(200) / 에러 - Error message(500)
+// res: 성공 - 로그인이 확인된 경우: OK(200), 로그인이 확인되지 않은 경우: null(200) / 에러 - Error message(500)
 api.get('/tokens/:tId', async (ctx, next) => {
     const { tId } = ctx.params;
 
     await model.sequelize.models.Tokens.findOne({
-        where: { tokenId: tId, loginStatus: true },
+        where: { tokenId: tId },
         attributes: [ 'loginId' ]
     }).then(result => {
-        console.log(result);
 
         if(result) {
-            // accessToken 발급해주어야 함
+            const accessToken = token.generateToken({ id: result.loginId });
+            ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
             ctx.body = { loginId: result.loginId };
         }
         else {
             ctx.body = { loginId: null };
         }
+    }).catch(err => {
+        console.log(err);
+        ctx.status = 500;
+    });
+    ctx.status = 200;
+});
+
+// random token 삭제 테스트 API
+api.delete('/tokens/:tId', async (ctx, next) => {
+    const { tId } = ctx.params;
+
+    await model.sequelize.models.Tokens.destroy({
+        where: { tokenId: tId }
+    }).then(() => {
+        console.log("[Auth]Delete Token Success");
     }).catch(err => {
         console.log(err);
         ctx.status = 500;
@@ -257,12 +277,13 @@ api.get('/auth/:tId', async (ctx, next) => {
     const { tId } = ctx.params;
 
     if(accessToken !== undefined) {
+        let decodedToken = token.decodeToken(accessToken);
         await model.sequelize.models.Tokens.findOne({
             where: { tokenId: tId }
         }).then(async result => {
             if(result) {
                 await model.sequelize.models.Tokens.update({
-                    loginStatus: true, loginId: accessToken
+                    loginId: decodedToken.id
                 }, { where: { tokenId: tId }
                 }).then(() => {
                     console.log("[Auth]QR Login Success");
