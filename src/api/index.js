@@ -257,6 +257,7 @@ api.get('/tokens/:tId', async (ctx, next) => {
         if(result) {
             const accessToken = token.generateToken({ id: result.loginId });
             ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+            ctx.body = { loginId: result.loginId };
         }
         else {
             ctx.body = { loginId: null };
