@@ -172,7 +172,7 @@ api.post('/users/login', async (ctx, next) => {
             if(result) {
                 console.log("[User]Login Success");
                 const accessToken = token.generateToken({ id: uId });
-                ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 24 * 1 });
+                ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
             }
             else {
                 console.log("[User]Login Failed: incorrect password");
@@ -234,7 +234,7 @@ api.get('/tokens/:tId', async (ctx, next) => {
 
         if(result) {
             const accessToken = token.generateToken({ id: result.loginId });
-            ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 24 * 1 });
+            ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
         }
         else {
             ctx.body = { loginId: null };
