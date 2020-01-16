@@ -59,6 +59,28 @@ api.get('/', async (ctx, next) => {
     });
 });
 
+// 로그인 요청 테스트 API
+api.get('/login', (ctx, next) => {
+    ctx.body = `<!DOCTYPE html>
+    <html>
+        <head>
+            <title>로그인 페이지</title>
+            <meta charset="utf-8">
+        </head>
+        <body>
+            login로그인 페이지<br>
+            <hr>
+    
+             <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/users/login" method="post">
+                아이디 : <input type="text" name="uId"><br>
+                비밀번호 : <input type="password" name="uPw"><br>
+                <input type="submit" value="로그인">
+            </form>
+        </body>
+    </html>`;
+    ctx.status = 200;
+});
+
 // 쿠키 생성 테스트 API
 api.get('/cookies', (ctx, next) => {
     // 하루동안 유지되는 쿠키 생성(Name: name, Value: value)
