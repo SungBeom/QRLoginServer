@@ -9,7 +9,12 @@ fetch("http://localhost:3000/tokens")
 
         let count = 0;
         let timer = setInterval(() => {
-            if(++count === 30) clearInterval(timer);
+            if(++count === 30) {
+                fetch("http://localhost:3000/tokens/" + QRContent.randomToken, { method: 'delete' })
+                .then(() => {
+                    clearInterval(timer);
+                });
+            }
 
             fetch("http://localhost:3000/tokens/" + QRContent.randomToken)
             .then(res2 => res2.json())
