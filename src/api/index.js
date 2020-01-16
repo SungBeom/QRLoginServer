@@ -269,6 +269,21 @@ api.get('/tokens/:tId', async (ctx, next) => {
     ctx.status = 200;
 });
 
+// random token 삭제 테스트 API
+api.delete('/tokens/:tId', async (ctx, next) => {
+    const { tId } = ctx.params;
+
+    await model.sequelize.models.Tokens.destroy({
+        where: { tokenId: tId }
+    }).then(() => {
+        console.log("[Auth]Delete Token Success");
+    }).catch(err => {
+        console.log(err);
+        ctx.status = 500;
+    });
+    ctx.status = 200;
+});
+
 // QR 로그인 인증 API
 // req: tId(QR 코드로 발급받은 토큰 Id/string)
 // res: 성공 - 로그인 확인이 되었고 QR 코드가 정상적으로 생성되었으며 해당 QR 코드를 인식한 경우:OK(200) /
