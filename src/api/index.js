@@ -41,7 +41,7 @@ api.get('/', async (ctx, next) => {
 
         // await setInterval(() => {
         //     model.sequelize.models.Tokens.findOne({
-        //         where: { tokenId: randomToken, loginStatus: true },
+        //         where: { tokenId: randomToken },
         //         attributes: [ 'loginId' ]
         //     }).then(result => {
         //         if(result) console.log(result.loginId);
@@ -194,7 +194,7 @@ api.post('/users/login', async (ctx, next) => {
             if(result) {
                 console.log("[User]Login Success");
                 const accessToken = token.generateToken({ id: uId });
-                ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 24 * 1 });
+                ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
             }
             else {
                 console.log("[User]Login Failed: incorrect password");
@@ -245,19 +245,18 @@ api.get('/tokens', async (ctx, next) => {
 
 // QR 로그인 확인 API
 // req: tId(QR 코드로 생성 시에 만들어진 토큰)
-// res: 성공 - 로그인이 확인된 경우: 유저의 ID(200), 로그인이 확인되지 않은 경우: null(200) / 에러 - Error message(500)
+// res: 성공 - 로그인이 확인된 경우: OK(200), 로그인이 확인되지 않은 경우: null(200) / 에러 - Error message(500)
 api.get('/tokens/:tId', async (ctx, next) => {
     const { tId } = ctx.params;
 
     await model.sequelize.models.Tokens.findOne({
-        where: { tokenId: tId, loginStatus: true },
+        where: { tokenId: tId },
         attributes: [ 'loginId' ]
     }).then(result => {
-        console.log(result);
 
         if(result) {
-            // accessToken 발급해주어야 함
-            ctx.body = { loginId: result.loginId };
+            const accessToken = token.generateToken({ id: result.loginId });
+            ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
         }
         else {
             ctx.body = { loginId: null };
@@ -279,12 +278,13 @@ api.get('/auth/:tId', async (ctx, next) => {
     const { tId } = ctx.params;
 
     if(accessToken !== undefined) {
+        let decodedToken = token.decodeToken(accessToken);
         await model.sequelize.models.Tokens.findOne({
             where: { tokenId: tId }
         }).then(async result => {
             if(result) {
                 await model.sequelize.models.Tokens.update({
-                    loginStatus: true, loginId: accessToken
+                    loginId: decodedToken.id
                 }, { where: { tokenId: tId }
                 }).then(() => {
                     console.log("[Auth]QR Login Success");

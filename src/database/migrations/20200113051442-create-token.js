@@ -6,10 +6,6 @@ module.exports = {
         type: Sequelize.STRING,
         primaryKey: true
       },
-      loginStatus: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false
-      },
       loginId: {
         type: Sequelize.STRING
       }
