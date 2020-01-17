@@ -50,7 +50,8 @@ api.get('/', async (ctx, next) => {
 
 // 회원 가입 API
 // req: userId(신규 유저 Id/string), userPw(신규 유저 Pw/string), name(신규 유저 이름/string), engName(신규 유저 영어 이름/string)
-// res: 성공 - OK(200) / 실패 - Fail message(400) / 에러 - Error message(500)
+// res: 성공 - OK(200) / 에러 - Error message(500)
+// Front-end에서 검증(비어 있지 않은 값, 타입 일치, 중복되지 않은 Id)된 값을 전달하므로 실패할 수 없음
 api.post('/users', async (ctx, next) => {
     const { userId, userPw, name, engName } = ctx.request.body;
 
@@ -104,7 +105,7 @@ api.post('/users', async (ctx, next) => {
 // ID 중복 체크 API
 // req: uId(중복 체크하려는 유저 Id/string)
 // res: 성공 - 중복인 경우:1(200), 중복이 아닌 경우:0(200) / 에러 - Error message(500)
-// Id가 undefined나 string 타입이 아닐 수 없으므로 실패 불가
+// Id가 undefined나 string 타입이 아닐 수 없으므로 실패할 수 없음
 api.get('/users/ids/:userId', async (ctx, next) => {
     const { userId } = ctx.params;
 
@@ -123,14 +124,14 @@ api.get('/users/ids/:userId', async (ctx, next) => {
 
 // 정보 조회 API
 // req: Access token
-// res: 성공 - User info(200) / 실패 - Fail message(400) / 에러 - Error message(500)
+// res: 성공 - User info(200) / 실패 - Fail message(401) / 에러 - Error message(500)
 api.get('/users', async (ctx, next) => {
     const accessToken = ctx.cookies.get('accessToken');
 
     if(accessToken === undefined) {
         console.log("[User]Search Failed: Login Required");
         ctx.body = "You need to login.";
-        ctx.status = 400;
+        ctx.status = 401;
     }
     else {
         const decodedToken = token.decodeToken(accessToken);
@@ -162,7 +163,7 @@ api.get('/users', async (ctx, next) => {
 
 // 정보 수정 API
 // req: userPw(새로운 유저 Pw/string), name(새로운 유저 이름/string), engName(새로운 유저 영어 이름/string) + Acccess token
-// res: 성공 - OK(200) / 실패 - Fail message(400) / 에러 - Error message(500)
+// res: 성공 - OK(200) / 실패 - Fail message(401) / 에러 - Error message(500)
 api.put('/users', async (ctx, next) => {
     const { userPw, name, engName } = ctx.request.body;
 
@@ -189,7 +190,7 @@ api.put('/users', async (ctx, next) => {
     if(accessToken === undefined) {
         console.log("[User]Update Failed: Login Required");
         ctx.body = "You need to login.";
-        ctx.status = 400;
+        ctx.status = 401;
     }
     else {
         const decodedToken = token.decodeToken(accessToken);
@@ -210,17 +211,18 @@ api.put('/users', async (ctx, next) => {
 
 // 회원 탈퇴 API
 // req: Access token
-// res: 성공 - OK(200) + Access token(-) / 실패 - Fail message(400) / 에러 - Error message(500)
+// res: 성공 - OK(200) + Access token(-) / 실패 - Fail message(401) / 에러 - Error message(500)
 api.delete('/users', async (ctx, next) => {
     const accessToken = ctx.cookies.get('accessToken');
 
     if(accessToken === undefined) {
         console.log("[User]Delete Failed: Login Required");
         ctx.body = "You need to login.";
-        ctx.status = 400;
+        ctx.status = 401;
     }
     else {
         const decodedToken = token.decodeToken(accessToken);
+
         ctx.cookies.set('accessToken', null);
         ctx.cookies.set('accessToken.sig', null);
 
@@ -245,35 +247,36 @@ api.delete('/users', async (ctx, next) => {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 로그인 API
-// req: uId(기존 유저 Id/string), uPw(기존 유저 Pw/string)
-// res: 성공 - 찾은 경우:OK(200) + access token(+), 못 찾은 경우:Fail message(200) / 실패 - Fail message(400) / 에러 - Error message(500)
+// req: userId(기존 유저 Id/string), userPw(기존 유저 Pw/string)
+// res: 성공 - OK(200) + Access token(+) / 실패 - Fail message(401) / 에러 - Error message(500)
 api.post('/auth/login', async (ctx, next) => {
-    // uId, uPw가 undefined인 경우는 client에서 소거, type은 string으로 보장
-    const { uId, uPw } = ctx.request.body;
+    const { userId, userPw } = ctx.request.body;
 
-    // client 연산의 임시 코드
-    if(uId === undefined || uPw === undefined) {
-        console.log("[User]Login failed: missing information");
-        ctx.body = "The required information is missing.\nHow to Use: [POST]/users/login\nLogin for registered user\n";
-        ctx.body += "req: uId(신규 유저 Id/string), uPw(신규 유저 Pw/string)";
-        ctx.status = 400;
-        return;
-    }
-    // client 연산의 임시 코드
-    else if(typeof(uId) !== "string" || typeof(uPw) !== "string") {
-        console.log("[User]Login failed: missmatched type");
-        ctx.body = "The type of information does not match.\nHow to Use: [POST]/users/login\nLogin for registered user\n";
-        ctx.body += "req: uId(신규 유저 Id/string), uPw(신규 유저 Pw/string)";
-        ctx.status = 400;
-        return;
-    }
+    // // userId, userPw가 undefined인 경우는 front-end에서 소거, type은 string으로 보장
+    // // client 연산의 임시 코드
+    // if(userId === undefined || userPw === undefined) {
+    //     console.log("[User]Login Failed: Missing Information");
+    //     ctx.body = "The required information is missing.\nHow to Use: [POST]/auth/login\nLogin for registered user\n";
+    //     ctx.body += "req: userId(로그인하는 유저 Id/string), userPw(로그인하는 유저 Pw/string)";
+    //     ctx.status = 400;
+    //     return;
+    // }
+    // // client 연산의 임시 코드
+    // else if(typeof(userId) !== "string" || typeof(userPw) !== "string") {
+    //     console.log("[User]Login Failed: Missmatched Type");
+    //     ctx.body = "The type of information does not match.\nHow to Use: [POST]/auth/login\nLogin for registered user\n";
+    //     ctx.body += "req: userId(로그인하는 유저 Id/string), userPw(로그인하는 유저 Pw/string)";
+    //     ctx.status = 400;
+    //     return;
+    // }
 
+    // userId 중복 체크를 미리 진행하는 쪽으로 변경하여 해당 코드는 없어질 예정
     let duplicate = true;
     await model.sequelize.models.Users.findOne({
-        where: { userId: uId }
+        where: { userId: userId }
     }).then(result => {
         if(!result) {
-            console.log("[User]Login failed: nonexistent Id");
+            console.log("[Auth]Create Failed: Nonexistent Id");
             ctx.body = "There is no user with that Id.";
             duplicate = false;
         }
@@ -284,18 +287,19 @@ api.post('/auth/login', async (ctx, next) => {
 
     if(duplicate) {
         await model.sequelize.models.Users.findOne({
-            where: { userId: uId, userPw: uPw }
+            where: { userId: userId, userPw: userPw }
         }).then(result => {
             if(result) {
-                console.log("[User]Login Success");
-                const accessToken = token.generateToken({ id: uId });
-                ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+                console.log("[Auth]Create Success: Token Created");
+                const accessToken = token.generateToken({ id: userId });
+                ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+                ctx.status = 200;
             }
             else {
-                console.log("[User]Login Failed: incorrect password");
+                console.log("[Auth]Create Failed: Incorrect Password");
                 ctx.body = "The password is incorrect.";
+                ctx,status = 401;
             }
-            ctx.status = 200;
         }).catch(err => {
             console.log(err);
             ctx.status = 500;
@@ -305,13 +309,23 @@ api.post('/auth/login', async (ctx, next) => {
 
 // 로그아웃 API
 // req: access token
-// res: 성공 - OK(200) + access token(-)
-// cookie가 이미 없었더라도 실패하는 경우 없이 OK
+// res: 성공 - OK(200) + access token(-) / 실패 - Fail message(401)
+// 토큰 관련이 아니라면 에러 상황은 없음
 api.delete('/auth/logout', (ctx, next) => {
-    ctx.cookies.set('accessToken', '');
-    ctx.cookies.set('accessToken.sig', '');
-    console.log("[User]Logout Success");
-    ctx.status = 200;
+    const accessToken = ctx.cookies.get('accessToken');
+
+    if(accessToken === undefined) {
+        console.log("[Auth]Delete Failed: Login Required");
+        ctx.body = "You need to login.";
+        ctx.status = 401;
+    }
+    else {
+        ctx.cookies.set("accessToken", null);
+        ctx.cookies.set("accessToken.sig", null);
+
+        console.log("[Auth]Delete Success: Logout");
+        ctx.status = 200;
+    }
 });
 
 // 로그인 체크 API
@@ -320,16 +334,18 @@ api.delete('/auth/logout', (ctx, next) => {
 api.get('/auth', (ctx, next) => {
     let accessToken = ctx.cookies.get('accessToken');
 
-    if(accessToken !== undefined) {
-        let decodedToken = token.decodeToken(accessToken);
-        console.log("[Auth]Login Permission");
-        ctx.body = "Welcome " + decodedToken.id + "!";
+    if(accessToken === undefined) {
+        console.log("[Auth]Read Failed: Login Required");
+        ctx.body = "You need to login.";
+        ctx.status = 401;
     }
     else {
-        console.log("[Auth]Login Denied");
-        ctx.body = "You need to login.";
+        let decodedToken = token.decodeToken(accessToken);
+
+        console.log("[Auth]Read Success: Login");
+        ctx.body = "Welcome " + decodedToken.id + "!";
+        ctx.status = 200;
     }
-    ctx.status = 200;
 });
 
 
