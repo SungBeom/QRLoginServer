@@ -49,7 +49,7 @@ api.get('/', async (ctx, next) => {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 회원 가입 API
-// req: userId(신규 유저 Id/string), userPw(신규 우저 Pw/string), name(신규 유저 이름/string), engName(신규 유저 영어 이름/string)
+// req: userId(신규 유저 Id/string), userPw(신규 유저 Pw/string), name(신규 유저 이름/string), engName(신규 유저 영어 이름/string)
 // res: 성공 - OK(200) / 실패 - Fail message(400) / 에러 - Error message(500)
 api.post('/users', async (ctx, next) => {
     const { userId, userPw, name, engName } = ctx.request.body;
@@ -78,7 +78,7 @@ api.post('/users', async (ctx, next) => {
         where: { userId: userId }
     }).then(result => {
         if(result) {
-            console.log("[User]Sign Up Failed: Duplicate Id");
+            console.log("[User]Create Failed: Duplicate Id");
             ctx.body = "The Id that already exists.";
             duplicate = true;
             ctx.status = 200;
@@ -92,7 +92,7 @@ api.post('/users', async (ctx, next) => {
         await model.sequelize.models.Users.create({
             userId: userId, userPw: userPw, name: name, engName: engName
         }).then(() => {
-            console.log("[User]Sign Up Success");
+            console.log("[User]Create Success: Sign Up");
             ctx.status = 200;
         }).catch(err => {
             console.log(err);
@@ -111,7 +111,7 @@ api.get('/users/ids/:userId', async (ctx, next) => {
     await model.sequelize.models.Users.findOne({
         where: { userId: userId }
     }).then(result => {
-        console.log("[User]Duplicate Check Success");
+        console.log("[User]Read Success: Duplicate Check");
         if(result) ctx.body = 1;
         else ctx.body = 0;
         ctx.status = 200;
@@ -144,11 +144,12 @@ api.get('/users', async (ctx, next) => {
                 searchInfo.name = result.dataValues.name;
                 searchInfo.engName = result.dataValues.engName;
 
-                console.log("[User]Search Success");
+                console.log("[User]Read Success: Search Info");
                 ctx.body = searchInfo;
             }
+            // 없는 유저를 조회하는 일은 사실 상 불가능함
             else {
-                console.log("[User]Search Failed: Nonexistent Id");
+                console.log("[User]Read Failed: Nonexistent Id");
                 ctx.body = "There is no user with that Id.";
             }
             ctx.status = 200;
@@ -186,7 +187,7 @@ api.put('/users', async (ctx, next) => {
     const accessToken = ctx.cookies.get('accessToken');
     
     if(accessToken === undefined) {
-        console.log("[User]Search Failed: Login Required");
+        console.log("[User]Update Failed: Login Required");
         ctx.body = "You need to login.";
         ctx.status = 400;
     }
@@ -198,7 +199,7 @@ api.put('/users', async (ctx, next) => {
         }, {
             where: { userId: decodedToken.id }
         }).then(() => {
-            console.log("[User]Change Info Success");
+            console.log("[User]Update Success: Change Info");
             ctx.status = 200;
         }).catch(err => {
             console.log(err);
@@ -214,18 +215,19 @@ api.delete('/users', async (ctx, next) => {
     const accessToken = ctx.cookies.get('accessToken');
 
     if(accessToken === undefined) {
-        console.log("[User]Search Failed: Login Required");
+        console.log("[User]Delete Failed: Login Required");
         ctx.body = "You need to login.";
         ctx.status = 400;
     }
     else {
         const decodedToken = token.decodeToken(accessToken);
-        ctx.cookies.set('accessToken', '');
+        ctx.cookies.set('accessToken', null);
+        ctx.cookies.set('accessToken.sig', null);
 
         await model.sequelize.models.Users.destroy({
             where: { userId: decodedToken.id }
         }).then(() => {
-            console.log("[User]Delete success");
+            console.log("[User]Delete success: Sign Out");
             ctx.status = 200;
         }).catch(err => {
             console.log(err);
