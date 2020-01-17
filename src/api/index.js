@@ -13,7 +13,7 @@ model.sequelize.sync().then(() => {
     console.log(err);
 });
 
-// 로그인 테스트, Front의 기능을 임시 구현
+// 로그인 테스트, front-end의 기능을 임시 구현
 api.get('/', async (ctx, next) => {
     // ctx.body = "API Server";
     // ctx.status = 200;
@@ -38,46 +38,50 @@ api.get('/', async (ctx, next) => {
     ctx.status = 200;
 });
 
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // User 관련 API
 // 회원 가입        : [POST]/users
-// 정보 조회        : [GET]/users/:uId
+// ID 중복 체크     : [GET]/users/ids/:uId
+// 정보 조회        : [GET]/users
 // 정보 수정        : [PUT]/users
-// 회원 탈퇴        : [DELETE]/users/:uId
+// 회원 탈퇴        : [DELETE]/users
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 회원 가입 API
-// req: uId(신규 유저 Id/string), uPw(신규 우저 Pw/string), uName(신규 유저 이름/string), uEngName(신규 유저 영어 이름/string)
+// req: userId(신규 유저 Id/string), userPw(신규 우저 Pw/string), name(신규 유저 이름/string), engName(신규 유저 영어 이름/string)
 // res: 성공 - OK(200) / 실패 - Fail message(400) / 에러 - Error message(500)
 api.post('/users', async (ctx, next) => {
-    // uId, uPw, uName, uEngName이 undefined인 경우는 client에서 소거, type은 string으로 보장
-    const { uId, uPw, uName, uEngName } = ctx.request.body;
+    const { userId, userPw, name, engName } = ctx.request.body;
 
-    // client 연산의 임시 코드
-    if(uId === undefined || uPw === undefined || uName === undefined || uEngName === undefined) {
-        console.log("[User]Sign up failed: missing information");
-        ctx.body = "The required information is missing.\nHow to Use: [POST]/signup\nSign up for new users\n";
-        ctx.body += "req: uId(신규 유저 Id/string), uPw(신규 유저 Pw/string), uName(신규 유저 이름/string), uEngName(신규 유저 영어 이름/string)";
-        ctx.status = 400;
-        return;
-    }
-    // client 연산의 임시 코드
-    else if(typeof(uId) !== "string" || typeof(uPw) !== "string" || typeof(uName) !== "string" || typeof(uEngName) !== "string") {
-        console.log("[User]Sign up failed: missmatched type");
-        ctx.body = "The type of information does not match.\nHow to Use: [POST]/signup\nSign up for new users\n";
-        ctx.body += "req: uId(신규 유저 Id/string), uPw(신규 유저 Pw/string), uName(신규 유저 이름/string), uEngName(신규 유저 영어 이름/string)";
-        ctx.status = 400;
-        return;
-    }
+    // // userId, userPw, name, engName이 undefined인 경우는 front-end에서 소거, type은 string으로 보장
+    // // Front-end 연산의 임시 코드
+    // if(userId === undefined || userPw === undefined || name === undefined || engName === undefined) {
+    //     console.log("[User]Sign Up Failed: Missing Information");
+    //     ctx.body = "The required information is missing.\nHow to Use: [POST]/users\nSign up for new users\n";
+    //     ctx.body += "req: userId(신규 유저 Id/string), userPw(신규 유저 Pw/string), name(신규 유저 이름/string), engName(신규 유저 영어 이름/string)";
+    //     ctx.status = 400;
+    //     return;
+    // }
+    // // front-end 연산의 임시 코드
+    // else if(typeof(userId) !== "string" || typeof(userPw) !== "string" || typeof(name) !== "string" || typeof(engName) !== "string") {
+    //     console.log("[User]Sign Up Failed: Missmatched Type");
+    //     ctx.body = "The type of information does not match.\nHow to Use: [POST]/users\nSign up for new users\n";
+    //     ctx.body += "req: userId(신규 유저 Id/string), userPw(신규 유저 Pw/string), name(신규 유저 이름/string), engName(신규 유저 영어 이름/string)";
+    //     ctx.status = 400;
+    //     return;
+    // }
 
+    // userId 중복 체크를 미리 진행하는 쪽으로 변경하여 해당 코드는 없어질 예정
     let duplicate = false;
     await model.sequelize.models.Users.findOne({
-        where: { userId: uId }
+        where: { userId: userId }
     }).then(result => {
         if(result) {
-            console.log("[User]Sign up failed: duplicate Id");
+            console.log("[User]Sign Up Failed: Duplicate Id");
             ctx.body = "The Id that already exists.";
             duplicate = true;
+            ctx.status = 200;
         }
     }).catch(err => {
         console.log(err);
@@ -86,9 +90,9 @@ api.post('/users', async (ctx, next) => {
 
     if(!duplicate) {
         await model.sequelize.models.Users.create({
-            userId: uId, userPw: uPw, name: uName, engName: uEngName
+            userId: userId, userPw: userPw, name: name, engName: engName
         }).then(() => {
-            console.log("[User]Sign up success");
+            console.log("[User]Sign Up Success");
             ctx.status = 200;
         }).catch(err => {
             console.log(err);
@@ -97,17 +101,11 @@ api.post('/users', async (ctx, next) => {
     }
 });
 
-// ID 중복 체크 API[안내]
-api.get('/users/ids', (ctx, next) => {
-    ctx.body = "How to Use: [GET]/users/ids/:userId\nCheck for duplicate id using 'userId'";
-    ctx.status = 400;
-});
-
 // ID 중복 체크 API
 // req: uId(중복 체크하려는 유저 Id/string)
-// res: 성공 - 중복인 경우:0(200), 중복이 아닌 경우:1(200) / 에러 - Error message(500)
+// res: 성공 - 중복인 경우:1(200), 중복이 아닌 경우:0(200) / 에러 - Error message(500)
 // Id가 undefined나 string 타입이 아닐 수 없으므로 실패 불가
-api.get('users/ids/:userId', async (ctx, next) => {
+api.get('/users/ids/:userId', async (ctx, next) => {
     const { userId } = ctx.params;
 
     await model.sequelize.models.Users.findOne({
@@ -123,66 +121,82 @@ api.get('users/ids/:userId', async (ctx, next) => {
     })
 });
 
-// 정보 조회 API[안내]
-api.get('/users', (ctx, next) => {
-    console.log(ctx.body = "How to Use: [GET]/users/:userId\nSearch for a user by 'userId'");
-});
-
 // 정보 조회 API
-// req: uId(검색하려는 유저 Id/string) + access token
-// res: 성공 - 찾은 경우:User info(200), 못 찾은 경우:Fail message(200) / 에러 - Error message(500)
-// Id가 undefined나 string 타입이 아닐 수 없으므로 실패 불가
-api.get('/users/:uId', async (ctx, next) => {
-    const { uId } = ctx.params;
+// req: Access token
+// res: 성공 - User info(200) / 실패 - Fail message(400) / 에러 - Error message(500)
+api.get('/users', async (ctx, next) => {
+    const accessToken = ctx.cookies.get('accessToken');
 
-    await model.sequelize.models.Users.findOne({
-        where: { userId: uId }
-    }).then(result => {
-        if(result) {
-            console.log("[User]Search success");
-            ctx.body = result.dataValues;
-        }
-        else {
-            console.log("[User]Search failed: nonexistent Id");
-            ctx.body = "There is no user with that Id.";
-        }
-        ctx.status = 200;
-    }).catch(err => {
-        console.log(err);
-        ctx.status = 500;
-    });
+    if(accessToken === undefined) {
+        console.log("[User]Search Failed: Login Required");
+        ctx.body = "You need to login.";
+        ctx.status = 400;
+    }
+    else {
+        const decodedToken = token.decodeToken(accessToken);
+
+        await model.sequelize.models.Users.findOne({
+            where: { userId: decodedToken.id }
+        }).then(result => {
+            if(result) {
+                let searchInfo = {};
+                searchInfo.userId = result.dataValues.userId;
+                searchInfo.name = result.dataValues.name;
+                searchInfo.engName = result.dataValues.engName;
+
+                console.log("[User]Search Success");
+                ctx.body = searchInfo;
+            }
+            else {
+                console.log("[User]Search Failed: Nonexistent Id");
+                ctx.body = "There is no user with that Id.";
+            }
+            ctx.status = 200;
+        }).catch(err => {
+            console.log(err);
+            ctx.status = 500;
+        });
+    }
 });
 
 // 정보 수정 API
-// req: uPw(새로운 유저 Pw/string), uName(새로운 유저 이름/string), uEngName(새로운 유저 영어 이름/string) + acccess token
-// res: 성공 - OK(200) / 에러 - Error message(500)
+// req: userPw(새로운 유저 Pw/string), name(새로운 유저 이름/string), engName(새로운 유저 영어 이름/string) + Acccess token
+// res: 성공 - OK(200) / 실패 - Fail message(400) / 에러 - Error message(500)
 api.put('/users', async (ctx, next) => {
-    const { uPw, uName, uEngName } = ctx.request.body;
+    const { userPw, name, engName } = ctx.request.body;
 
-    // client 연산의 임시 코드
-    if(uPw === undefined || uName === undefined || uEngName === undefined) {
-        console.log("[User]Information modification failed: missing information");
-        ctx.body = "The required information is missing.\nHow to Use: [PUT]/users\nChange user information\n";
-        ctx.body += "req: uPw(변경 유저 Pw/string), uName(변경 유저 이름/string), uEngName(변경 유저 영어 이름/string)";
-        ctx.status = 400;
-        return;
-    }
-    // client 연산의 임시 코드
-    else if(typeof(uPw) !== "string" || typeof(uName) !== "string" || typeof(uEngName) !== "string") {
-        console.log("[User]Sign up failed: missmatched type");
-        ctx.body = "The type of information does not match.\nHow to Use: [PUT]/users\nChange user information\n";
-        ctx.body += "req: uPw(변경 유저 Pw/string), uName(변경 유저 이름/string), uEngName(변경 유저 영어 이름/string)";
-        ctx.status = 400;
-        return;
-    }
+    // // userPw, name, engName이 undefined인 경우는 front-end에서 소거, type은 string으로 보장
+    // // front-end 연산의 임시 코드
+    // if(userPw === undefined || name === undefined || engName === undefined) {
+    //     console.log("[User]Change Info failed: Missing Information");
+    //     ctx.body = "The required information is missing.\nHow to Use: [PUT]/users\nChange user information\n";
+    //     ctx.body += "req: userPw(변경 유저 Pw/string), name(변경 유저 이름/string), engName(변경 유저 영어 이름/string)";
+    //     ctx.status = 400;
+    //     return;
+    // }
+    // // front-end 연산의 임시 코드
+    // else if(typeof(userPw) !== "string" || typeof(name) !== "string" || typeof(engName) !== "string") {
+    //     console.log("[User]Change Info Failed: Missmatched Type");
+    //     ctx.body = "The type of information does not match.\nHow to Use: [PUT]/users\nChange user information\n";
+    //     ctx.body += "req: userPw(변경 유저 Pw/string), name(변경 유저 이름/string), engName(변경 유저 영어 이름/string)";
+    //     ctx.status = 400;
+    //     return;
+    // }
 
     const accessToken = ctx.cookies.get('accessToken');
-    if(accessToken !== undefined) {
+    
+    if(accessToken === undefined) {
+        console.log("[User]Search Failed: Login Required");
+        ctx.body = "You need to login.";
+        ctx.status = 400;
+    }
+    else {
         const decodedToken = token.decodeToken(accessToken);
         
         await model.sequelize.models.Users.update({
-            userPw: uPw, name: uName, engName: uEngName
-        }, { where: { userId: decodedToken.id }
+            userPw: userPw, name: name, engName: engName
+        }, {
+            where: { userId: decodedToken.id }
         }).then(() => {
             console.log("[User]Change Info Success");
             ctx.status = 200;
@@ -193,30 +207,31 @@ api.put('/users', async (ctx, next) => {
     }
 });
 
-// 회원 탈퇴 API[안내]
-api.delete('/users', (ctx, next) => {
-    console.log(ctx.body = "How to Use: [DELETE]/users/:userId\nDelete a user with 'userId'");
-});
-
 // 회원 탈퇴 API
-// req: uId(탈퇴하려는 유저 Id/string) + access token
-// res: 성공 - (204) + access token(-) / 에러 - Error message(500)
-// 이미 없는 Id라도 실패하는 경우 없이 OK
-api.delete('/users/:uId', async (ctx, next) => {
-    const { uId } = ctx.params;
+// req: Access token
+// res: 성공 - OK(200) + Access token(-) / 실패 - Fail message(400) / 에러 - Error message(500)
+api.delete('/users', async (ctx, next) => {
+    const accessToken = ctx.cookies.get('accessToken');
 
-    ctx.cookies.set('accessToken', '');
-    ctx.cookies.set('accessToken.sig', '');
+    if(accessToken === undefined) {
+        console.log("[User]Search Failed: Login Required");
+        ctx.body = "You need to login.";
+        ctx.status = 400;
+    }
+    else {
+        const decodedToken = token.decodeToken(accessToken);
+        ctx.cookies.set('accessToken', '');
 
-    await model.sequelize.models.Users.destroy({
-        where: { userId: uId }
-    }).then(() => {
-        console.log("[User]Delete success");
-        ctx.status = 204;
-    }).catch(err => {
-        console.log(err);
-        ctx.status = 500;
-    });
+        await model.sequelize.models.Users.destroy({
+            where: { userId: decodedToken.id }
+        }).then(() => {
+            console.log("[User]Delete success");
+            ctx.status = 200;
+        }).catch(err => {
+            console.log(err);
+            ctx.status = 500;
+        });
+    }
 });
 
 
