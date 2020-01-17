@@ -241,15 +241,15 @@ api.delete('/users', async (ctx, next) => {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 인증 관련 API
-// 로그인           : [POST]/auth/login
-// 로그아웃          : [DELETE]/auth/logout
+// 로그인           : [POST]/auth
+// 로그아웃          : [DELETE]/auth
 // 로그인 체크       : [GET]/auth
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 로그인 API
 // req: userId(기존 유저 Id/string), userPw(기존 유저 Pw/string)
 // res: 성공 - OK(200) + Access token(+) / 실패 - Fail message(401) / 에러 - Error message(500)
-api.post('/auth/login', async (ctx, next) => {
+api.post('/auth', async (ctx, next) => {
     const { userId, userPw } = ctx.request.body;
 
     // // userId, userPw가 undefined인 경우는 front-end에서 소거, type은 string으로 보장
@@ -311,7 +311,7 @@ api.post('/auth/login', async (ctx, next) => {
 // req: access token
 // res: 성공 - OK(200) + access token(-) / 실패 - Fail message(401)
 // 토큰 관련이 아니라면 에러 상황은 없음
-api.delete('/auth/logout', (ctx, next) => {
+api.delete('/auth', (ctx, next) => {
     const accessToken = ctx.cookies.get('accessToken');
 
     if(accessToken === undefined) {
