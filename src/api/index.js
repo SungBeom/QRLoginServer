@@ -97,6 +97,32 @@ api.post('/users', async (ctx, next) => {
     }
 });
 
+// ID 중복 체크 API[안내]
+api.get('/users/ids', (ctx, next) => {
+    ctx.body = "How to Use: [GET]/users/ids/:userId\nCheck for duplicate id using 'userId'";
+    ctx.status = 400;
+});
+
+// ID 중복 체크 API
+// req: uId(중복 체크하려는 유저 Id/string)
+// res: 성공 - 중복인 경우:0(200), 중복이 아닌 경우:1(200) / 에러 - Error message(500)
+// Id가 undefined나 string 타입이 아닐 수 없으므로 실패 불가
+api.get('users/ids/:userId', async (ctx, next) => {
+    const { userId } = ctx.params;
+
+    await model.sequelize.models.Users.findOne({
+        where: { userId: userId }
+    }).then(result => {
+        console.log("[User]Duplicate Check Success");
+        if(result) ctx.body = 1;
+        else ctx.body = 0;
+        ctx.status = 200;
+    }).catch(err => {
+        console.log(err);
+        ctx.status = 500;
+    })
+});
+
 // 정보 조회 API[안내]
 api.get('/users', (ctx, next) => {
     console.log(ctx.body = "How to Use: [GET]/users/:userId\nSearch for a user by 'userId'");
