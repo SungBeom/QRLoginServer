@@ -42,7 +42,7 @@ api.get('/', async (ctx, next) => {
 // User 관련 API
 // 회원 가입        : [POST]/users
 // 정보 조회        : [GET]/users/:uId
-// 정보 수정        : [PUT]/users/:uId
+// 정보 수정        : [PUT]/users
 // 회원 탈퇴        : [DELETE]/users/:uId
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -125,6 +125,46 @@ api.get('/users/:uId', async (ctx, next) => {
         console.log(err);
         ctx.status = 500;
     });
+});
+
+// 정보 수정 API
+// req: uPw(새로운 유저 Pw/string), uName(새로운 유저 이름/string), uEngName(새로운 유저 영어 이름/string) + acccess token
+// res: 성공 - OK(200) / 에러 - Error message(500)
+api.put('/users', async (ctx, next) => {
+    const { uPw, uName, uEngName } = ctx.request.body;
+
+    // client 연산의 임시 코드
+    if(uPw === undefined || uName === undefined || uEngName === undefined) {
+        console.log("[User]Information modification failed: missing information");
+        ctx.body = "The required information is missing.\nHow to Use: [PUT]/users\nChange user information\n";
+        ctx.body += "req: uPw(변경 유저 Pw/string), uName(변경 유저 이름/string), uEngName(변경 유저 영어 이름/string)";
+        ctx.status = 400;
+        return;
+    }
+    // client 연산의 임시 코드
+    else if(typeof(uPw) !== "string" || typeof(uName) !== "string" || typeof(uEngName) !== "string") {
+        console.log("[User]Sign up failed: missmatched type");
+        ctx.body = "The type of information does not match.\nHow to Use: [PUT]/users\nChange user information\n";
+        ctx.body += "req: uPw(변경 유저 Pw/string), uName(변경 유저 이름/string), uEngName(변경 유저 영어 이름/string)";
+        ctx.status = 400;
+        return;
+    }
+
+    const accessToken = ctx.cookies.get('accessToken');
+    if(accessToken !== undefined) {
+        const decodedToken = token.decodeToken(accessToken);
+        
+        await model.sequelize.models.Users.update({
+            userPw: uPw, name: uName, engName: uEngName
+        }, { where: { userId: decodedToken.id }
+        }).then(() => {
+            console.log("[User]Change Info Success");
+            ctx.status = 200;
+        }).catch(err => {
+            console.log(err);
+            ctx.status = 500;
+        });
+    }
 });
 
 // 회원 탈퇴 API[안내]
@@ -280,7 +320,7 @@ api.post('/codes', async (ctx, next) => {
 // QR 로그인 API
 // req: tId(QR 코드로 발급받은 토큰 Id/string)
 // res: 성공 - 로그인 확인이 되었고 QR 코드가 정상적으로 생성되었으며 해당 QR 코드를 인식한 경우:OK(200) /
-//      실패 - 로그인이 되지 않은 경우:Fail message(401), 로그인이 확인되었으나 QR 코드의 토큰이 다른 경우: Fail message(404)
+//      실패 - 로그인이 되지 않은 경우:Fail message(401), 로그인이 확인되었으나 QR 코드의 토큰이 다른 경우:Fail message(404)
 // DB에 해당 토큰이 있는지 확인하여, 있다면 쿠키를 이용해 누가 로그인 헀는지 변경
 api.put('/auth/:tId', async (ctx, next) => {
     const accessToken = ctx.cookies.get('accessToken');
@@ -326,7 +366,7 @@ api.put('/auth/:tId', async (ctx, next) => {
 
 // QR 로그인 체크 API
 // req: tId(QR 코드로 생성 시에 만들어진 토큰)
-// res: 성공 - 로그인이 확인된 경우: OK(200) + access token(+), 로그인이 확인되지 않은 경우: null(200) / 에러 - Error message(500)
+// res: 성공 - 로그인이 확인된 경우:OK(200) + access token(+), 로그인이 확인되지 않은 경우:null(200) / 에러 - Error message(500)
 api.get('/codes/:tId', async (ctx, next) => {
     const { tId } = ctx.params;
 
