@@ -13,105 +13,11 @@ model.sequelize.sync().then(() => {
     console.log(err);
 });
 
-// 임시로 API call을 하는 QRCode를 노출
-// 랜덤 token을 이용해 QR 코드를 생성해주도록 변경하기
+// 로그인 테스트, front-end의 기능을 임시 구현
 api.get('/', async (ctx, next) => {
-    const QRContent = process.env.SERVER_IP + ":" + process.env.SERVER_PORT + "/auth";
-    const dataURL = QRCode.toDataURL(QRContent, { width: 300, color: { dark: "#222222FF", light: "#F0F8FFFF" } });
+    // ctx.body = "API Server";
+    // ctx.status = 200;
 
-    await dataURL.then(async url => {
-        ctx.body = `<!DOCTYPE html>
-        <html>
-            <head></head>
-            <body>
-                <image id="qrcode" src="${url}">
-            </body>
-        </html>`;
-
-        // const randomToken = crypto.randomBytes(64).toString('hex');
-        
-        // await model.sequelize.models.Tokens.create({
-        //     tokenId: randomToken
-        // }).then(() => {
-        //     console.log("[Auth]Create Token Success");
-        // }).catch(err => {
-        //     console.log(err);
-        //     ctx.status = 500;
-        // });
-
-        // await setInterval(() => {
-        //     model.sequelize.models.Tokens.findOne({
-        //         where: { tokenId: randomToken },
-        //         attributes: [ 'loginId' ]
-        //     }).then(result => {
-        //         if(result) console.log(result.loginId);
-        //         // 여기에서 로그인이 성공할 수 있도록 해야함
-        //     }).catch(err => {
-        //         console.log(err);
-        //         ctx.status = 500;
-        //     })
-        // }, 1000);
-
-        ctx.status = 200;
-    }).catch(err => {
-        console.log(err);
-        ctx.status = 500;
-    });
-});
-
-// 회원 가입 API
-// req: uId(신규 유저 Id/string), uPw(신규 우저 Pw/string), uName(신규 유저 이름/string), uEngName(신규 유저 영어 이름/string)
-// res: 성공 - OK(200) / 실패 - Fail message(400) / 에러 - Error message(500)
-api.post('/signup', async (ctx, next) => {
-    // uId, uPw, uName, uEngName이 undefined인 경우는 client에서 소거, type은 string으로 보장
-    const { uId, uPw, uName, uEngName } = ctx.request.body;
-
-    // client 연산의 임시 코드
-    if(uId === undefined || uPw === undefined || uName === undefined || uEngName === undefined) {
-        console.log("[User]Sign up failed: missing information");
-        ctx.body = "The required information is missing.\nHow to Use: [POST]/signup\nSign up for new users\n";
-        ctx.body += "req: uId(신규 유저 Id/string), uPw(신규 유저 Pw/string), uName(신규 유저 이름/string), uEngName(신규 유저 영어 이름/string)";
-        ctx.status = 400;
-        return;
-    }
-    // client 연산의 임시 코드
-    else if(typeof(uId) !== "string" || typeof(uPw) !== "string" || typeof(uName) !== "string" || typeof(uEngName) !== "string") {
-        console.log("[User]Sign up failed: missmatched type");
-        ctx.body = "The type of information does not match.\nHow to Use: [POST]/signup\nSign up for new users\n";
-        ctx.body += "req: uId(신규 유저 Id/string), uPw(신규 유저 Pw/string), uName(신규 유저 이름/string), uEngName(신규 유저 영어 이름/string)";
-        ctx.status = 400;
-        return;
-    }
-
-    let duplicate = false;
-    await model.sequelize.models.Users.findOne({
-        where: { userId: uId }
-    }).then(result => {
-        if(result) {
-            console.log("[User]Sign up failed: duplicate Id");
-            ctx.body = "The Id that already exists.";
-            duplicate = true;
-        }
-    }).catch(err => {
-        console.log(err);
-        ctx.status = 500;
-    });
-
-    if(!duplicate) {
-        await model.sequelize.models.Users.create({
-            userId: uId, userPw: uPw, name: uName, engName: uEngName
-        }).then(() => {
-            console.log("[User]Sign up success");
-            ctx.status = 200;
-        }).catch(err => {
-            console.log(err);
-            ctx.status = 500;
-        });
-    }
-});
-
-// 로그인 요청 테스트 API
-api.get('/login', (ctx, next) => {
     ctx.body = `<!DOCTYPE html>
     <html>
         <head>
@@ -132,36 +38,245 @@ api.get('/login', (ctx, next) => {
     ctx.status = 200;
 });
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// User 관련 API
+// 회원 가입        : [POST]/users
+// ID 중복 체크     : [GET]/users/ids/:userId
+// 정보 조회        : [GET]/users
+// 정보 수정        : [PUT]/users
+// 회원 탈퇴        : [DELETE]/users
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// 회원 가입 API
+// req: userId(신규 유저 Id/string), userPw(신규 유저 Pw/string), name(신규 유저 이름/string), engName(신규 유저 영어 이름/string)
+// res: 성공 - OK(200) / 에러 - Error message(500)
+// Front-end에서 검증(비어 있지 않은 값, 타입 일치, 중복되지 않은 Id)된 값을 전달하므로 실패할 수 없음
+api.post('/users', async (ctx, next) => {
+    const { userId, userPw, name, engName } = ctx.request.body;
+
+    // // userId, userPw, name, engName이 undefined인 경우는 front-end에서 소거, type은 string으로 보장
+    // // Front-end 연산의 임시 코드
+    // if(userId === undefined || userPw === undefined || name === undefined || engName === undefined) {
+    //     console.log("[User]Sign Up Failed: Missing Information");
+    //     ctx.body = "The required information is missing.\nHow to Use: [POST]/users\nSign up for new users\n";
+    //     ctx.body += "req: userId(신규 유저 Id/string), userPw(신규 유저 Pw/string), name(신규 유저 이름/string), engName(신규 유저 영어 이름/string)";
+    //     ctx.status = 400;
+    //     return;
+    // }
+    // // front-end 연산의 임시 코드
+    // else if(typeof(userId) !== "string" || typeof(userPw) !== "string" || typeof(name) !== "string" || typeof(engName) !== "string") {
+    //     console.log("[User]Sign Up Failed: Missmatched Type");
+    //     ctx.body = "The type of information does not match.\nHow to Use: [POST]/users\nSign up for new users\n";
+    //     ctx.body += "req: userId(신규 유저 Id/string), userPw(신규 유저 Pw/string), name(신규 유저 이름/string), engName(신규 유저 영어 이름/string)";
+    //     ctx.status = 400;
+    //     return;
+    // }
+
+    // userId 중복 체크를 미리 진행하는 쪽으로 변경하여 해당 코드는 없어질 예정
+    let duplicate = false;
+    await model.sequelize.models.Users.findOne({
+        where: { userId: userId }
+    }).then(result => {
+        if(result) {
+            console.log("[User]Create Failed: Duplicate Id");
+            ctx.body = "The Id that already exists.";
+            duplicate = true;
+            ctx.status = 200;
+        }
+    }).catch(err => {
+        console.log(err);
+        ctx.status = 500;
+    });
+
+    if(!duplicate) {
+        await model.sequelize.models.Users.create({
+            userId: userId, userPw: userPw, name: name, engName: engName
+        }).then(() => {
+            console.log("[User]Create Success: Sign Up");
+            ctx.status = 200;
+        }).catch(err => {
+            console.log(err);
+            ctx.status = 500;
+        });
+    }
+});
+
+// ID 중복 체크 API
+// req: uId(중복 체크하려는 유저 Id/string)
+// res: 성공 - 중복인 경우:1(200), 중복이 아닌 경우:0(200) / 에러 - Error message(500)
+// Id가 undefined나 string 타입이 아닐 수 없으므로 실패할 수 없음
+api.get('/users/ids/:userId', async (ctx, next) => {
+    const { userId } = ctx.params;
+
+    await model.sequelize.models.Users.findOne({
+        where: { userId: userId }
+    }).then(result => {
+        console.log("[User]Read Success: Duplicate Check");
+        if(result) ctx.body = 1;
+        else ctx.body = 0;
+        ctx.status = 200;
+    }).catch(err => {
+        console.log(err);
+        ctx.status = 500;
+    })
+});
+
+// 정보 조회 API
+// req: Access token
+// res: 성공 - User info(200) / 실패 - Fail message(401) / 에러 - Error message(500)
+api.get('/users', async (ctx, next) => {
+    const accessToken = ctx.cookies.get('accessToken');
+
+    if(accessToken === undefined) {
+        console.log("[User]Search Failed: Login Required");
+        ctx.body = "You need to login.";
+        ctx.status = 401;
+    }
+    else {
+        const decodedToken = token.decodeToken(accessToken);
+
+        await model.sequelize.models.Users.findOne({
+            where: { userId: decodedToken.id }
+        }).then(result => {
+            if(result) {
+                let searchInfo = {};
+                searchInfo.userId = result.dataValues.userId;
+                searchInfo.name = result.dataValues.name;
+                searchInfo.engName = result.dataValues.engName;
+
+                console.log("[User]Read Success: Search Info");
+                ctx.body = searchInfo;
+            }
+            // 없는 유저를 조회하는 일은 사실 상 불가능함
+            else {
+                console.log("[User]Read Failed: Nonexistent Id");
+                ctx.body = "There is no user with that Id.";
+            }
+            ctx.status = 200;
+        }).catch(err => {
+            console.log(err);
+            ctx.status = 500;
+        });
+    }
+});
+
+// 정보 수정 API
+// req: userPw(새로운 유저 Pw/string), name(새로운 유저 이름/string), engName(새로운 유저 영어 이름/string) + Acccess token
+// res: 성공 - OK(200) / 실패 - Fail message(401) / 에러 - Error message(500)
+api.put('/users', async (ctx, next) => {
+    const { userPw, name, engName } = ctx.request.body;
+
+    // // userPw, name, engName이 undefined인 경우는 front-end에서 소거, type은 string으로 보장
+    // // front-end 연산의 임시 코드
+    // if(userPw === undefined || name === undefined || engName === undefined) {
+    //     console.log("[User]Change Info failed: Missing Information");
+    //     ctx.body = "The required information is missing.\nHow to Use: [PUT]/users\nChange user information\n";
+    //     ctx.body += "req: userPw(변경 유저 Pw/string), name(변경 유저 이름/string), engName(변경 유저 영어 이름/string)";
+    //     ctx.status = 400;
+    //     return;
+    // }
+    // // front-end 연산의 임시 코드
+    // else if(typeof(userPw) !== "string" || typeof(name) !== "string" || typeof(engName) !== "string") {
+    //     console.log("[User]Change Info Failed: Missmatched Type");
+    //     ctx.body = "The type of information does not match.\nHow to Use: [PUT]/users\nChange user information\n";
+    //     ctx.body += "req: userPw(변경 유저 Pw/string), name(변경 유저 이름/string), engName(변경 유저 영어 이름/string)";
+    //     ctx.status = 400;
+    //     return;
+    // }
+
+    const accessToken = ctx.cookies.get('accessToken');
+    
+    if(accessToken === undefined) {
+        console.log("[User]Update Failed: Login Required");
+        ctx.body = "You need to login.";
+        ctx.status = 401;
+    }
+    else {
+        const decodedToken = token.decodeToken(accessToken);
+        
+        await model.sequelize.models.Users.update({
+            userPw: userPw, name: name, engName: engName
+        }, {
+            where: { userId: decodedToken.id }
+        }).then(() => {
+            console.log("[User]Update Success: Change Info");
+            ctx.status = 200;
+        }).catch(err => {
+            console.log(err);
+            ctx.status = 500;
+        });
+    }
+});
+
+// 회원 탈퇴 API
+// req: Access token
+// res: 성공 - OK(200) + Access token(-) / 실패 - Fail message(401) / 에러 - Error message(500)
+api.delete('/users', async (ctx, next) => {
+    const accessToken = ctx.cookies.get('accessToken');
+
+    if(accessToken === undefined) {
+        console.log("[User]Delete Failed: Login Required");
+        ctx.body = "You need to login.";
+        ctx.status = 401;
+    }
+    else {
+        const decodedToken = token.decodeToken(accessToken);
+
+        ctx.cookies.set('accessToken', null);
+        ctx.cookies.set('accessToken.sig', null);
+
+        await model.sequelize.models.Users.destroy({
+            where: { userId: decodedToken.id }
+        }).then(() => {
+            console.log("[User]Delete success: Sign Out");
+            ctx.status = 200;
+        }).catch(err => {
+            console.log(err);
+            ctx.status = 500;
+        });
+    }
+});
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 인증 관련 API
+// 로그인           : [POST]/auth
+// 로그아웃          : [DELETE]/auth
+// 로그인 체크       : [GET]/auth
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // 로그인 API
-// req: uId(기존 유저 Id/string), uPw(기존 유저 Pw/string)
-// res: 성공 - 찾은 경우:OK(200), 못 찾은 경우:Fail message(200) / 실패 - Fail message(400) / 에러 - Error message(500)
-api.post('/users/login', async (ctx, next) => {
-    // uId, uPw가 undefined인 경우는 client에서 소거, type은 string으로 보장
-    const { uId, uPw } = ctx.request.body;
+// req: userId(기존 유저 Id/string), userPw(기존 유저 Pw/string)
+// res: 성공 - OK(200) + Access token(+) / 실패 - Fail message(401) / 에러 - Error message(500)
+api.post('/auth', async (ctx, next) => {
+    const { userId, userPw } = ctx.request.body;
 
-    // client 연산의 임시 코드
-    if(uId === undefined || uPw === undefined) {
-        console.log("[User]Login failed: missing information");
-        ctx.body = "The required information is missing.\nHow to Use: [POST]/users/login\nLogin for registered user\n";
-        ctx.body += "req: uId(신규 유저 Id/string), uPw(신규 유저 Pw/string)";
-        ctx.status = 400;
-        return;
-    }
-    // client 연산의 임시 코드
-    else if(typeof(uId) !== "string" || typeof(uPw) !== "string") {
-        console.log("[User]Login failed: missmatched type");
-        ctx.body = "The type of information does not match.\nHow to Use: [POST]/users/login\nLogin for registered user\n";
-        ctx.body += "req: uId(신규 유저 Id/string), uPw(신규 유저 Pw/string)";
-        ctx.status = 400;
-        return;
-    }
+    // // userId, userPw가 undefined인 경우는 front-end에서 소거, type은 string으로 보장
+    // // client 연산의 임시 코드
+    // if(userId === undefined || userPw === undefined) {
+    //     console.log("[User]Login Failed: Missing Information");
+    //     ctx.body = "The required information is missing.\nHow to Use: [POST]/auth/login\nLogin for registered user\n";
+    //     ctx.body += "req: userId(로그인하는 유저 Id/string), userPw(로그인하는 유저 Pw/string)";
+    //     ctx.status = 400;
+    //     return;
+    // }
+    // // client 연산의 임시 코드
+    // else if(typeof(userId) !== "string" || typeof(userPw) !== "string") {
+    //     console.log("[User]Login Failed: Missmatched Type");
+    //     ctx.body = "The type of information does not match.\nHow to Use: [POST]/auth/login\nLogin for registered user\n";
+    //     ctx.body += "req: userId(로그인하는 유저 Id/string), userPw(로그인하는 유저 Pw/string)";
+    //     ctx.status = 400;
+    //     return;
+    // }
 
+    // userId 중복 체크를 미리 진행하는 쪽으로 변경하여 해당 코드는 없어질 예정
     let duplicate = true;
     await model.sequelize.models.Users.findOne({
-        where: { userId: uId }
+        where: { userId: userId }
     }).then(result => {
         if(!result) {
-            console.log("[User]Login failed: nonexistent Id");
+            console.log("[Auth]Create Failed: Nonexistent Id");
             ctx.body = "There is no user with that Id.";
             duplicate = false;
         }
@@ -172,18 +287,19 @@ api.post('/users/login', async (ctx, next) => {
 
     if(duplicate) {
         await model.sequelize.models.Users.findOne({
-            where: { userId: uId, userPw: uPw }
+            where: { userId: userId, userPw: userPw }
         }).then(result => {
             if(result) {
-                console.log("[User]Login Success");
-                const accessToken = token.generateToken({ id: uId });
-                ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+                console.log("[Auth]Create Success: Token Created");
+                const accessToken = token.generateToken({ id: userId });
+                ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+                ctx.status = 200;
             }
             else {
-                console.log("[User]Login Failed: incorrect password");
+                console.log("[Auth]Create Failed: Incorrect Password");
                 ctx.body = "The password is incorrect.";
+                ctx,status = 401;
             }
-            ctx.status = 200;
         }).catch(err => {
             console.log(err);
             ctx.status = 500;
@@ -191,33 +307,68 @@ api.post('/users/login', async (ctx, next) => {
     }
 });
 
-// 인가 테스트 API
+// 로그아웃 API
+// req: access token
+// res: 성공 - OK(200) + access token(-) / 실패 - Fail message(401)
+// 토큰 관련이 아니라면 에러 상황은 없음
+api.delete('/auth', (ctx, next) => {
+    const accessToken = ctx.cookies.get('accessToken');
+
+    if(accessToken === undefined) {
+        console.log("[Auth]Delete Failed: Login Required");
+        ctx.body = "You need to login.";
+        ctx.status = 401;
+    }
+    else {
+        ctx.cookies.set("accessToken", null);
+        ctx.cookies.set("accessToken.sig", null);
+
+        console.log("[Auth]Delete Success: Logout");
+        ctx.status = 200;
+    }
+});
+
+// 로그인 체크 API
+// req: access token
+// res: 성공 - Welcome message(200) / 실패 - Fail message(401)
 api.get('/auth', (ctx, next) => {
     let accessToken = ctx.cookies.get('accessToken');
 
-    if(accessToken !== undefined) {
-        let decodedToken = token.decodeToken(accessToken);
-        console.log("[Auth]Login Permission");
-        ctx.body = "Welcome " + decodedToken.id + "!";
+    if(accessToken === undefined) {
+        console.log("[Auth]Read Failed: Login Required");
+        ctx.body = "You need to login.";
+        ctx.status = 401;
     }
     else {
-        console.log("[Auth]Login Denied");
-        ctx.body = "You need to login.";
+        let decodedToken = token.decodeToken(accessToken);
+
+        console.log("[Auth]Read Success: Login");
+        ctx.body = "Welcome " + decodedToken.id + "!";
+        ctx.status = 200;
     }
-    ctx.status = 200;
 });
 
-// random 토큰 생성 API
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// QR 관련 API
+// QR 생성       : [POST]/codes
+// QR 로그인      : [PUT]/codes
+// QR 로그인 체크  : [GET]/codes/:codeId
+// QR 삭제       : [DELETE]/codes/:codeId
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// QR 생성 API
 // req: x
-// res: 성공 - token(200) / 에러: Error message(500)
-api.get('/tokens', async (ctx, next) => {
-    const randomToken = crypto.randomBytes(64).toString('hex');
+// res: 성공 - random QR code data(200) / 에러: Error message(500)
+// 단순 QR code에 들어갈 데이터를 생성하는 것이므로 실패할 수 없음
+api.post('/codes', async (ctx, next) => {
+    const codeId = crypto.randomBytes(64).toString('hex');
 
     await model.sequelize.models.Tokens.create({
-        tokenId: randomToken
+        tokenId: codeId
     }).then(result => {
-        console.log("[Auth]Create Token Success");
-        ctx.body = { randomToken: randomToken };
+        console.log("[QR]Create Success: QR Code Created");
+        ctx.body = { randomCode: codeId };
     }).catch(err => {
         console.log(err);
         ctx.status = 500;
@@ -226,67 +377,35 @@ api.get('/tokens', async (ctx, next) => {
     ctx.status = 200;
 });
 
-// QR 로그인 확인 API
-// req: tId(QR 코드로 생성 시에 만들어진 토큰)
-// res: 성공 - 로그인이 확인된 경우: OK(200), 로그인이 확인되지 않은 경우: null(200) / 에러 - Error message(500)
-api.get('/tokens/:tId', async (ctx, next) => {
-    const { tId } = ctx.params;
-
-    await model.sequelize.models.Tokens.findOne({
-        where: { tokenId: tId },
-        attributes: [ 'loginId' ]
-    }).then(result => {
-
-        if(result) {
-            const accessToken = token.generateToken({ id: result.loginId });
-            ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
-            ctx.body = { loginId: result.loginId };
-        }
-        else {
-            ctx.body = { loginId: null };
-        }
-    }).catch(err => {
-        console.log(err);
-        ctx.status = 500;
-    });
-    ctx.status = 200;
-});
-
-// random token 삭제 테스트 API
-api.delete('/tokens/:tId', async (ctx, next) => {
-    const { tId } = ctx.params;
-
-    await model.sequelize.models.Tokens.destroy({
-        where: { tokenId: tId }
-    }).then(() => {
-        console.log("[Auth]Delete Token Success");
-    }).catch(err => {
-        console.log(err);
-        ctx.status = 500;
-    });
-    ctx.status = 200;
-});
-
-// QR 로그인 인증 API
-// req: tId(QR 코드로 발급받은 토큰 Id/string)
-// res: 성공 - 로그인 확인이 되었고 QR 코드가 정상적으로 생성되었으며 해당 QR 코드를 인식한 경우:OK(200) /
-//      실패 - 로그인이 되지 않은 경우:Fail message(401), 로그인이 확인되었으나 QR 코드의 토큰이 다른 경우: Fail message(404)
-// DB에 해당 토큰이 있는지 확인하여, 있다면 쿠키를 이용해 누가 로그인 헀는지 변경
-api.get('/auth/:tId', async (ctx, next) => {
+// QR 로그인 API
+// req: codeId(QR code로 전달된 data/string)
+// res: 성공 - 로그인 확인이 되었고 QR code가 정상적으로 생성되었으며 해당 QR code를 인식한 경우:OK(200) /
+//      실패 - 로그인이 되지 않은 상태로 인식시킨 경우:Fail message(401), 로그인이 확인되었으나 QR code의 data가 경우:Fail message(404) /
+//      에러 - Error message(500)
+api.put('/codes', async (ctx, next) => {
     const accessToken = ctx.cookies.get('accessToken');
-    const { tId } = ctx.params;
+    const { codeId } = ctx.request.body;
 
-    if(accessToken !== undefined) {
+    if(accessToken === undefined) {
+        // access 토큰이 없는데 접근하는 경우
+        // access 토큰 발급을 위해 로그인이 필요함
+        console.log("[QR]Update Failed: Login Required");
+        ctx.body = "You need to login.";
+        ctx.status = 401;
+    }
+    else {
         let decodedToken = token.decodeToken(accessToken);
+        
         await model.sequelize.models.Tokens.findOne({
-            where: { tokenId: tId }
+            where: { tokenId: codeId }
         }).then(async result => {
             if(result) {
                 await model.sequelize.models.Tokens.update({
                     loginId: decodedToken.id
-                }, { where: { tokenId: tId }
+                }, {
+                    where: { tokenId: codeId }
                 }).then(() => {
-                    console.log("[Auth]QR Login Success");
+                    console.log("[QR]Update Success: QR Login");
                     ctx.status = 200;
                 }).catch(err => {
                     console.log(err);
@@ -296,8 +415,9 @@ api.get('/auth/:tId', async (ctx, next) => {
             else {
                 // random 토큰이 있는데 QR로 인식한 토큰이 아닐 경우
                 // 인증된 사용자가 고의적인 url 입력할 가능성 있음
-                console.log("[Auth]Invalid Token");
-                ctx.body = "Invalid token."
+                // 인증된 사용자로부터의 이상 행동, 혹은 토큰 탍취 후 QR 로그인 방식을 지각하지 못한 경우
+                console.log("[QR]Update Failed: Invalid QR Code");
+                ctx.body = "Invalid token.";
                 ctx.status = 404;
             }
         }).catch(err => {
@@ -305,48 +425,27 @@ api.get('/auth/:tId', async (ctx, next) => {
             ctx.status = 500;
         });
     }
-    else {
-        // access 토큰이 없는데 접근하는 경우
-        // access 토큰 발급을 위해 로그인이 필요함
-        console.log("[Auth]Login Denied");
-        ctx.body = "You need to login.";
-        ctx.status = 401;
-    }
 });
 
-// 로그아웃 API
-// req: x
-// res: 성공 - OK(200)
-// cookie가 이미 없었더라도 실패하는 경우 없이 OK
-api.delete('/logout', (ctx, next) => {
-    ctx.cookies.set('accessToken', '');
-    ctx.cookies.set('accessToken.sig', '');
-    console.log("[User]Logout Success");
-    ctx.status = 200;
-});
+// QR 로그인 체크 API
+// req: codeId(QR code 생성 시에 만들어진 data/string)
+// res: 성공 - 로그인이 확인된 경우:OK(200) + Access token(+) / 에러 - Error message(500)
+api.get('/codes/:codeId', async (ctx, next) => {
+    const { codeId } = ctx.params;
 
-// 회원 검색 API[안내]
-api.get('/users', (ctx, next) => {
-    console.log(ctx.body = "How to Use: [GET]/users/:userId\nSearch for a user by 'userId'");
-});
-
-// 회원 검색 API
-// req: uId(검색하려는 유저 Id/string)
-// res: 성공 - 찾은 경우:User info(200), 못 찾은 경우:Fail message(200) / 에러 - Error message(500)
-// Id가 undefined나 string 타입이 아닐 수 없으므로 실패 불가
-api.get('/users/:uId', async (ctx, next) => {
-    const { uId } = ctx.params;
-
-    await model.sequelize.models.Users.findOne({
-        where: { userId: uId }
+    await model.sequelize.models.Tokens.findOne({
+        where: { tokenId: codeId },
+        attributes: [ 'loginId' ]
     }).then(result => {
         if(result) {
-            console.log("[User]Search success");
-            ctx.body = result.dataValues;
+            const accessToken = token.generateToken({ id: result.loginId });
+
+            ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+
+            ctx.body = { loginId: result.loginId };
         }
         else {
-            console.log("[User]Search failed: nonexistent Id");
-            ctx.body = "There is no user with that Id.";
+            ctx.body = { loginId: null };
         }
         ctx.status = 200;
     }).catch(err => {
@@ -355,26 +454,18 @@ api.get('/users/:uId', async (ctx, next) => {
     });
 });
 
-// 회원 탈퇴 API[안내]
-api.delete('/users', (ctx, next) => {
-    console.log(ctx.body = "How to Use: [DELETE]/users/:userId\nDelete a user with 'userId'");
-});
+// QR 삭제 API
+// req: codeId(QR code로 전달된 data/string)
+// res: 성공 - OK(200) / 에러 - Error message(500)
+// QR code의 데이터는 생성될 때 DB에 등록되므로 없는 데이터 일수가 없기에 실패할 수 없음
+api.delete('/codes/:codeId', async (ctx, next) => {
+    const { codeId } = ctx.params;
 
-// 회원 탈퇴 API
-// req: uId(탈퇴하려는 유저 Id/string)
-// res: 성공 - (204) / 에러 - Error message(500)
-// 이미 없는 Id라도 실패하는 경우 없이 OK
-api.delete('/users/:uId', async (ctx, next) => {
-    const { uId } = ctx.params;
-
-    ctx.cookies.set('accessToken', '');
-    ctx.cookies.set('accessToken.sig', '');
-
-    await model.sequelize.models.Users.destroy({
-        where: { userId: uId }
+    await model.sequelize.models.Tokens.destroy({
+        where: { tokenId: codeId }
     }).then(() => {
-        console.log("[User]Delete success");
-        ctx.status = 204;
+        console.log("[QR]Delete Success: QR Code Deleted");
+        ctx.status = 200;
     }).catch(err => {
         console.log(err);
         ctx.status = 500;
