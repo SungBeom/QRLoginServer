@@ -16,7 +16,7 @@ fetch("http://localhost:3000/codes", { method: 'post' })
                 });
             }
 
-            fetch("http://localhost:3000/codes/" + QRContent.randomCode)
+            fetch("http://localhost:3000/codes/" + QRContent.randomCode, { method: 'put' })
             .then(res2 => res2.json())
             .then(result => {
                 if(result.loginId !== null) {
