@@ -352,7 +352,7 @@ api.get('/auth', (ctx, next) => {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // QR 관련 API
 // QR 생성       : [POST]/codes
-// QR 로그인      : [PUT]/codes
+// QR 로그인      : [PUT]/codes/:codeId
 // QR 로그인 체크  : [GET]/codes/:codeId
 // QR 삭제       : [DELETE]/codes/:codeId
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -382,9 +382,10 @@ api.post('/codes', async (ctx, next) => {
 // res: 성공 - 로그인 확인이 되었고 QR code가 정상적으로 생성되었으며 해당 QR code를 인식한 경우:OK(200) /
 //      실패 - 로그인이 되지 않은 상태로 인식시킨 경우:Fail message(401), 로그인이 확인되었으나 QR code의 data가 경우:Fail message(404) /
 //      에러 - Error message(500)
-api.put('/codes', async (ctx, next) => {
+// PUT 방식이 적절하나, QR 인식이 GET 방식인 것을 감안해 GET 방식으로 호출
+api.get('/codes/:codeId', async (ctx, next) => {
     const accessToken = ctx.cookies.get('accessToken');
-    const { codeId } = ctx.request.body;
+    const { codeId } = ctx.params;
 
     if(accessToken === undefined) {
         // access 토큰이 없는데 접근하는 경우
@@ -430,7 +431,8 @@ api.put('/codes', async (ctx, next) => {
 // QR 로그인 체크 API
 // req: codeId(QR code 생성 시에 만들어진 data/string)
 // res: 성공 - 로그인이 확인된 경우:OK(200) + Access token(+) / 에러 - Error message(500)
-api.get('/codes/:codeId', async (ctx, next) => {
+// GET 방식이 적절하나, QR 인식이 GET 방식인 것을 감안해 PUT 방식으로 호출
+api.put('/codes/:codeId', async (ctx, next) => {
     const { codeId } = ctx.params;
 
     await model.sequelize.models.Tokens.findOne({
