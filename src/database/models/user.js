@@ -5,7 +5,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       primaryKey: true
     },
-    userPw: DataTypes.STRING,
+    userPw: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    salt: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     name: DataTypes.STRING,
     engName: DataTypes.STRING
   }, {
