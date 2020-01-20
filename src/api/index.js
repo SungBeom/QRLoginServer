@@ -28,9 +28,9 @@ api.get('/', async (ctx, next) => {
             login로그인 페이지<br>
             <hr>
     
-             <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/users/login" method="post">
-                아이디 : <input type="text" name="uId"><br>
-                비밀번호 : <input type="password" name="uPw"><br>
+             <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/auth">
+                아이디 : <input type="text" name="userId"><br>
+                비밀번호 : <input type="password" name="userPw"><br>
                 <input type="submit" value="로그인">
             </form>
         </body>
@@ -352,8 +352,8 @@ api.get('/auth', (ctx, next) => {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // QR 관련 API
 // QR 생성       : [POST]/codes
-// QR 로그인      : [PUT]/codes/:codeId
-// QR 로그인 체크  : [GET]/codes/:codeId
+// QR 로그인      : [GET]/codes/:codeId(의미상 PUT)
+// QR 로그인 체크  : [PUT]/codes/:codeId(의미상 GET)
 // QR 삭제       : [DELETE]/codes/:codeId
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -362,7 +362,8 @@ api.get('/auth', (ctx, next) => {
 // res: 성공 - random QR code data(200) / 에러: Error message(500)
 // 단순 QR code에 들어갈 데이터를 생성하는 것이므로 실패할 수 없음
 api.post('/codes', async (ctx, next) => {
-    const codeId = crypto.randomBytes(64).toString('hex');
+    // const codeId = crypto.randomBytes(64).toString('hex');
+    const codeId = crypto.randomBytes(32).toString('base64');
 
     await model.sequelize.models.Tokens.create({
         tokenId: codeId
