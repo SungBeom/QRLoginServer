@@ -9,6 +9,9 @@ module.exports = {
       userPw: {
         type: Sequelize.STRING
       },
+      userSalt: {
+        type: Sequelize.STRING
+      },
       name: {
         type: Sequelize.STRING
       },
