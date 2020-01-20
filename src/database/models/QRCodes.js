@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     freezeTableName: true,
     timestamps: false
   });
-  Token.associate = function(models) {
+  QRCode.associate = function(models) {
     // associations can be defined here
   };
   return QRCode;
