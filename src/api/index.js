@@ -362,7 +362,8 @@ api.get('/auth', (ctx, next) => {
 // res: 성공 - random QR code data(200) / 에러: Error message(500)
 // 단순 QR code에 들어갈 데이터를 생성하는 것이므로 실패할 수 없음
 api.post('/codes', async (ctx, next) => {
-    const codeId = crypto.randomBytes(64).toString('hex');
+    // const codeId = crypto.randomBytes(64).toString('hex');
+    const codeId = crypto.randomBytes(32).toString('base64');
 
     await model.sequelize.models.Tokens.create({
         tokenId: codeId
