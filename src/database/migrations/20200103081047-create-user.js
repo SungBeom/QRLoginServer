@@ -7,10 +7,12 @@ module.exports = {
         primaryKey: true
       },
       userPw: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
-      userSalt: {
-        type: Sequelize.STRING
+      salt: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
       name: {
         type: Sequelize.STRING
