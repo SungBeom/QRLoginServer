@@ -89,10 +89,12 @@ api.post('/users', async (ctx, next) => {
         ctx.status = 500;
     });
 
-    const salt = crypto.randomBytes(64).toString('hex');
+    const salt = crypto.randomBytes(64).toString('base64');
+    const encryptedPw = crypto.pbkdf2Sync(userPw, salt, 10000, 128, 'sha512').toString('base64');
+
     if(!duplicate) {
         await model.sequelize.models.Users.create({
-            userId: userId, userPw: userPw, userSalt: salt, name: name, engName: engName
+            userId: userId, userPw: encryptedPw, salt: salt, name: name, engName: engName
         }).then(() => {
             console.log("[User]Create Success: Sign Up");
             ctx.status = 200;
@@ -195,12 +197,13 @@ api.put('/users', async (ctx, next) => {
     }
     else {
         const decodedToken = token.decodeToken(accessToken);
-        const salt = crypto.randomBytes(64).toString('hex');
-        
+        const salt = crypto.randomBytes(64).toString('base64');
+        const encryptedPw = crypto.pbkdf2Sync(userPw, salt, 10000, 128, 'sha512').toString('base64');
+
         await model.sequelize.models.Users.update({
-            userPw: userPw, userSalt: salt, name: name, engName: engName
+            userPw: encryptedPw, salt: salt, name: name, engName: engName
         }, {
-            where: { userId: decodedToken.id }
+            where: { userId: decodedToken.userId }
         }).then(() => {
             console.log("[User]Update Success: Change Info");
             ctx.status = 200;
@@ -229,7 +232,7 @@ api.delete('/users', async (ctx, next) => {
         ctx.cookies.set('accessToken.sig', null);
 
         await model.sequelize.models.Users.destroy({
-            where: { userId: decodedToken.id }
+            where: { userId: decodedToken.userId }
         }).then(() => {
             console.log("[User]Delete success: Sign Out");
             ctx.status = 200;
@@ -289,18 +292,20 @@ api.post('/auth', async (ctx, next) => {
 
     if(duplicate) {
         await model.sequelize.models.Users.findOne({
-            where: { userId: userId, userPw: userPw }
+            where: { userId: userId }
         }).then(result => {
-            if(result) {
+            const encryptedPw = crypto.pbkdf2Sync(userPw, result.salt, 10000, 128, 'sha512').toString('base64');
+
+            if(result.userPw !== encryptedPw) {
+                console.log("[Auth]Create Failed: Incorrect Password");
+                ctx.body = "The password is incorrect.";
+                ctx,status = 401;
+            }
+            else {
                 console.log("[Auth]Create Success: Token Created");
                 const accessToken = token.generateToken({ userId: userId });
                 ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
                 ctx.status = 200;
-            }
-            else {
-                console.log("[Auth]Create Failed: Incorrect Password");
-                ctx.body = "The password is incorrect.";
-                ctx,status = 401;
             }
         }).catch(err => {
             console.log(err);
