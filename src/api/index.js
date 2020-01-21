@@ -1,8 +1,8 @@
 const Router = require('koa-router');
 const model = require('../database/models');
 const token = require('../lib/token');
-const QRCode = require('qrcode');  // 모듈화 필요
 const crypto = require('crypto');
+const uuidv4 = require('uuid/v4');
 
 const api = new Router();
 
@@ -370,19 +370,19 @@ api.get('/auth', (ctx, next) => {
 // 단순 QR code에 들어갈 데이터를 생성하는 것이므로 실패할 수 없음
 api.post('/codes', async (ctx, next) => {
     // const codeData = crypto.randomBytes(64).toString('hex');
-    const codeData = crypto.randomBytes(32).toString('base64');
+    // const codeData = crypto.randomBytes(32).toString('base64');
+    const codeData = uuidv4();
 
     await model.sequelize.models.QRCodes.create({
         codeData: codeData
     }).then(result => {
         console.log("[QR]Create Success: QR Code Created");
         ctx.body = { codeData: codeData };
+        ctx.status = 200;
     }).catch(err => {
         console.log(err);
         ctx.status = 500;
     });
-
-    ctx.status = 200;
 });
 
 // QR 로그인 API
