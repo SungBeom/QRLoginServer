@@ -1,17 +1,17 @@
 'use strict';
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('Tokens', {
-      tokenId: {
+    return queryInterface.createTable('QRCodes', {
+      codeData: {
         type: Sequelize.STRING,
         primaryKey: true
       },
-      loginId: {
+      userId: {
         type: Sequelize.STRING
       }
     });
   },
   down: (queryInterface, Sequelize) => {
-    return queryInterface.dropTable('Tokens');
+    return queryInterface.dropTable('QRCodes');
   }
 };

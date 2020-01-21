@@ -1,17 +1,17 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-  const Token = sequelize.define('Tokens', {
-    tokenId: {
+  const QRCode = sequelize.define('QRCodes', {
+    codeData: {
       type: DataTypes.STRING,
       primaryKey: true
     },
-    loginId: DataTypes.STRING
+    userId: DataTypes.STRING
   }, {
     freezeTableName: true,
     timestamps: false
   });
-  Token.associate = function(models) {
+  QRCode.associate = function(models) {
     // associations can be defined here
   };
-  return Token;
+  return QRCode;
 };

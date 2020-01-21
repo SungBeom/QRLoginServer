@@ -1,8 +1,8 @@
 const Router = require('koa-router');
 const model = require('../database/models');
 const token = require('../lib/token');
-const QRCode = require('qrcode');  // 모듈화 필요
 const crypto = require('crypto');
+const uuidv4 = require('uuid/v4');
 
 const api = new Router();
 
@@ -28,9 +28,9 @@ api.get('/', async (ctx, next) => {
             login로그인 페이지<br>
             <hr>
     
-             <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/users/login" method="post">
-                아이디 : <input type="text" name="uId"><br>
-                비밀번호 : <input type="password" name="uPw"><br>
+             <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/auth">
+                아이디 : <input type="text" name="userId"><br>
+                비밀번호 : <input type="password" name="userPw"><br>
                 <input type="submit" value="로그인">
             </form>
         </body>
@@ -89,9 +89,12 @@ api.post('/users', async (ctx, next) => {
         ctx.status = 500;
     });
 
+    const salt = crypto.randomBytes(64).toString('base64');
+    const encryptedPw = crypto.pbkdf2Sync(userPw, salt, 10000, 128, 'sha512').toString('base64');
+
     if(!duplicate) {
         await model.sequelize.models.Users.create({
-            userId: userId, userPw: userPw, name: name, engName: engName
+            userId: userId, userPw: encryptedPw, salt: salt, name: name, engName: engName
         }).then(() => {
             console.log("[User]Create Success: Sign Up");
             ctx.status = 200;
@@ -194,11 +197,13 @@ api.put('/users', async (ctx, next) => {
     }
     else {
         const decodedToken = token.decodeToken(accessToken);
-        
+        const salt = crypto.randomBytes(64).toString('base64');
+        const encryptedPw = crypto.pbkdf2Sync(userPw, salt, 10000, 128, 'sha512').toString('base64');
+
         await model.sequelize.models.Users.update({
-            userPw: userPw, name: name, engName: engName
+            userPw: encryptedPw, salt: salt, name: name, engName: engName
         }, {
-            where: { userId: decodedToken.id }
+            where: { userId: decodedToken.userId }
         }).then(() => {
             console.log("[User]Update Success: Change Info");
             ctx.status = 200;
@@ -227,7 +232,7 @@ api.delete('/users', async (ctx, next) => {
         ctx.cookies.set('accessToken.sig', null);
 
         await model.sequelize.models.Users.destroy({
-            where: { userId: decodedToken.id }
+            where: { userId: decodedToken.userId }
         }).then(() => {
             console.log("[User]Delete success: Sign Out");
             ctx.status = 200;
@@ -287,18 +292,20 @@ api.post('/auth', async (ctx, next) => {
 
     if(duplicate) {
         await model.sequelize.models.Users.findOne({
-            where: { userId: userId, userPw: userPw }
+            where: { userId: userId }
         }).then(result => {
-            if(result) {
-                console.log("[Auth]Create Success: Token Created");
-                const accessToken = token.generateToken({ id: userId });
-                ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
-                ctx.status = 200;
-            }
-            else {
+            const encryptedPw = crypto.pbkdf2Sync(userPw, result.salt, 10000, 128, 'sha512').toString('base64');
+
+            if(result.userPw !== encryptedPw) {
                 console.log("[Auth]Create Failed: Incorrect Password");
                 ctx.body = "The password is incorrect.";
                 ctx,status = 401;
+            }
+            else {
+                console.log("[Auth]Create Success: Token Created");
+                const accessToken = token.generateToken({ userId: userId });
+                ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+                ctx.status = 200;
             }
         }).catch(err => {
             console.log(err);
@@ -352,9 +359,9 @@ api.get('/auth', (ctx, next) => {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // QR 관련 API
 // QR 생성       : [POST]/codes
-// QR 로그인      : [PUT]/codes/:codeId
-// QR 로그인 체크  : [GET]/codes/:codeId
-// QR 삭제       : [DELETE]/codes/:codeId
+// QR 로그인      : [GET]/codes/:codeData(의미상 PUT)
+// QR 로그인 체크  : [PUT]/codes/:codeData(의미상 GET)
+// QR 삭제       : [DELETE]/codes/:codeData
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // QR 생성 API
@@ -362,30 +369,31 @@ api.get('/auth', (ctx, next) => {
 // res: 성공 - random QR code data(200) / 에러: Error message(500)
 // 단순 QR code에 들어갈 데이터를 생성하는 것이므로 실패할 수 없음
 api.post('/codes', async (ctx, next) => {
-    const codeId = crypto.randomBytes(64).toString('hex');
+    // const codeData = crypto.randomBytes(64).toString('hex');
+    // const codeData = crypto.randomBytes(32).toString('base64');
+    const codeData = uuidv4();
 
-    await model.sequelize.models.Tokens.create({
-        tokenId: codeId
+    await model.sequelize.models.QRCodes.create({
+        codeData: codeData
     }).then(result => {
         console.log("[QR]Create Success: QR Code Created");
-        ctx.body = { randomCode: codeId };
+        ctx.body = { codeData: codeData };
+        ctx.status = 200;
     }).catch(err => {
         console.log(err);
         ctx.status = 500;
     });
-
-    ctx.status = 200;
 });
 
 // QR 로그인 API
-// req: codeId(QR code로 전달된 data/string)
+// req: codeData(QR code로 전달된 data/string)
 // res: 성공 - 로그인 확인이 되었고 QR code가 정상적으로 생성되었으며 해당 QR code를 인식한 경우:OK(200) /
 //      실패 - 로그인이 되지 않은 상태로 인식시킨 경우:Fail message(401), 로그인이 확인되었으나 QR code의 data가 경우:Fail message(404) /
 //      에러 - Error message(500)
 // PUT 방식이 적절하나, QR 인식이 GET 방식인 것을 감안해 GET 방식으로 호출
-api.get('/codes/:codeId', async (ctx, next) => {
+api.get('/codes/:codeData', async (ctx, next) => {
     const accessToken = ctx.cookies.get('accessToken');
-    const { codeId } = ctx.params;
+    const { codeData } = ctx.params;
 
     if(accessToken === undefined) {
         // access 토큰이 없는데 접근하는 경우
@@ -397,14 +405,14 @@ api.get('/codes/:codeId', async (ctx, next) => {
     else {
         let decodedToken = token.decodeToken(accessToken);
         
-        await model.sequelize.models.Tokens.findOne({
-            where: { tokenId: codeId }
+        await model.sequelize.models.QRCodes.findOne({
+            where: { codeData: codeData }
         }).then(async result => {
             if(result) {
-                await model.sequelize.models.Tokens.update({
-                    loginId: decodedToken.id
+                await model.sequelize.models.QRCodes.update({
+                    userId: decodedToken.userId
                 }, {
-                    where: { tokenId: codeId }
+                    where: { codeData: codeData }
                 }).then(() => {
                     console.log("[QR]Update Success: QR Login");
                     ctx.status = 200;
@@ -429,25 +437,27 @@ api.get('/codes/:codeId', async (ctx, next) => {
 });
 
 // QR 로그인 체크 API
-// req: codeId(QR code 생성 시에 만들어진 data/string)
+// req: codeData(QR code 생성 시에 만들어진 data/string)
 // res: 성공 - 로그인이 확인된 경우:OK(200) + Access token(+) / 에러 - Error message(500)
 // GET 방식이 적절하나, QR 인식이 GET 방식인 것을 감안해 PUT 방식으로 호출
-api.put('/codes/:codeId', async (ctx, next) => {
-    const { codeId } = ctx.params;
+api.put('/codes/:codeData', async (ctx, next) => {
+    const { codeData } = ctx.params;
 
-    await model.sequelize.models.Tokens.findOne({
-        where: { tokenId: codeId },
-        attributes: [ 'loginId' ]
+    await model.sequelize.models.QRCodes.findOne({
+        where: { codeData: codeData },
+        attributes: [ 'userId' ]
     }).then(result => {
         if(result) {
-            const accessToken = token.generateToken({ id: result.loginId });
+            const accessToken = token.generateToken({ userId: result.userId });
 
             ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
 
-            ctx.body = { loginId: result.loginId };
+            // front-end 업데이트 필요
+            ctx.body = { userId: result.userId };
         }
         else {
-            ctx.body = { loginId: null };
+            // front-end 업데이트 필요
+            ctx.body = { userId: null };
         }
         ctx.status = 200;
     }).catch(err => {
@@ -457,14 +467,14 @@ api.put('/codes/:codeId', async (ctx, next) => {
 });
 
 // QR 삭제 API
-// req: codeId(QR code로 전달된 data/string)
+// req: codeData(QR code로 전달된 data/string)
 // res: 성공 - OK(200) / 에러 - Error message(500)
 // QR code의 데이터는 생성될 때 DB에 등록되므로 없는 데이터 일수가 없기에 실패할 수 없음
-api.delete('/codes/:codeId', async (ctx, next) => {
-    const { codeId } = ctx.params;
+api.delete('/codes/:codeData', async (ctx, next) => {
+    const { codeData } = ctx.params;
 
-    await model.sequelize.models.Tokens.destroy({
-        where: { tokenId: codeId }
+    await model.sequelize.models.QRCodes.destroy({
+        where: { codeData: codeData }
     }).then(() => {
         console.log("[QR]Delete Success: QR Code Deleted");
         ctx.status = 200;
