@@ -7,6 +7,7 @@
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
         <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+        <script src="../../node_modules/qrcode/build/qrcode.min.js"></script>
     </head>
     <body>
         <div class="container">
@@ -16,19 +17,24 @@
                 </div>
                 <div class="col-md-3">
                     <div class="login-box well">
+                        <button id="qrbutton" class="btn btn-default btn-login-submit btn-block m-t-md" onclick="QRLogin()">Login with QR</button>
+                        <canvas id="qrcode" style="display: none; width: 100%; padding: 10px;"></canvas>
+                        <br>
                         <form accept-charset="UTF-8" role="form" method="post" action="http://localhost:3000/auth" target="_blank">
-                            <div class="form-group">
-                                <label for="username-email">아이디</label>
-                                <input name="userId" value='' id="username-email" placeholder="User Id" type="text" class="form-control">
+                            <div id="basiclogin">
+                                <div class="form-group">
+                                    <label for="username-email">아이디</label>
+                                    <input name="userId" value='' id="username-email" placeholder="User Id" type="text" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="password">비밀번호</label>
+                                    <input name="userPw" id="password" value='' placeholder="Password" type="password" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <input type="submit" class="btn btn-default btn-login-submit btn-block m-t-md" value="Submit">
+                                </div>
+                                <hr>
                             </div>
-                            <div class="form-group">
-                                <label for="password">비밀번호</label>
-                                <input name="userPw" id="password" value='' placeholder="Password" type="password" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <input type="submit" class="btn btn-default btn-login-submit btn-block m-t-md" value="Submit">
-                            </div>
-                            <hr>
                             <div class="form-group">
                                 <a href="signup.html" class="btn btn-default btn-block m-t-md">Sign Up</a>
                             </div>
@@ -37,5 +43,67 @@
                 </div>
             </div>
         </div>
+        <script>
+            let codeData = "";
+            const canvas = document.getElementById("qrcode");
+            const button = document.getElementById("qrbutton");
+            const login = document.getElementById("basiclogin");
+
+            function QRLogin() {
+                if(canvas.style.display === "none") {
+                    createQR();
+                }
+                else {
+                    deleteQR();
+                }
+            }
+
+            function createQR() {
+                fetch("http://localhost:3000/codes", { method: 'post' }).then(res => res.json()).then(qrcode => {
+                    QRCode.toCanvas(canvas, "http://localhost:3000/codes/" + qrcode.codeData, { width: 300, color: { dark: "#222222FF", light: "#F0F8FFFF" } }, err => {
+                        if(err) console.log(err);
+                        console.log("Create QR Codes");
+
+                        canvas.style.display = "block";
+                        canvas.style.width = "100%";
+                        canvas.style.height = canvas.style.width;
+
+                        login.style.display = "none";
+
+                        button.innerText = "Login without QR";
+
+                        let count = 0;
+                        let timer = setInterval(() => {
+                            if(++count === 30) {
+                                fetch("http://localhost:3000/codes/" + qrcode.codeData)
+                                .then(() => {
+                                    fetch("http://localhost:3000/codes/" + qrcode.codeData, { method: 'delete' })
+                                    .then(() => {
+                                        clearInterval(timer);
+                                    });
+                                });
+                            }
+
+                            fetch("http://localhost:3000/codes/" + qrcode.codeData, { method: 'put' }).then(res2 => res2.json()).then(result => {
+                                if(result.userId !== null) {
+                                    fetch("http://localhost:3000/codes/" + qrcode.codeData, { method: 'delete' })
+                                    .then(() => {
+                                        location.href = "success.html?uId=" + result.userId;
+                                    });
+                                }
+                            });
+                        }, 1000);
+                    });
+                });
+            }
+
+            function deleteQR() {
+                canvas.style.display = "none";
+
+                login.style.display = "block";
+
+                button.innerText = "Login with QR";
+            }
+        </script>
     </body>
 </html>
