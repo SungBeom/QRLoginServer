@@ -53,6 +53,10 @@
             const button = document.getElementById("qrbutton");
             const login = document.getElementById("basiclogin");
 
+            const id = document.getElementById("userid");
+            const pw = document.getElementById("userpw");
+            const data = document.getElementById("codedata");
+
             function QRLogin() {
                 if(canvas.style.display === "none") {
                     createQR();
@@ -79,21 +83,20 @@
                         let count = 0;
                         let timer = setInterval(() => {
                             if(++count === 30) {
-                                fetch("http://localhost:3000/codes/" + qrcode.codeData)
+                                fetch("http://localhost:3000/codes/" + qrcode.codeData, { method: 'delete' })
                                 .then(() => {
-                                    fetch("http://localhost:3000/codes/" + qrcode.codeData, { method: 'delete' })
-                                    .then(() => {
-                                        clearInterval(timer);
-                                    });
+                                    clearInterval(timer);
                                 });
                             }
 
                             fetch("http://localhost:3000/codes/" + qrcode.codeData, { method: 'put' }).then(res2 => res2.json()).then(result => {
                                 if(result.userId !== null) {
-                                    fetch("http://localhost:3000/codes/" + qrcode.codeData, { method: 'delete' })
-                                    .then(() => {
-                                        location.href = "success.html?uId=" + result.userId;
-                                    });
+                                    id.value = pw.value = null;
+                                    data.value = qrcode.codeData;
+
+                                    document.loginForm.submit();
+
+                                    clearInterval(timer);
                                 }
                             });
                         }, 1000);
