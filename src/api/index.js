@@ -27,8 +27,8 @@ api.get('/', async (ctx, next) => {
         <body>
             login로그인 페이지<br>
             <hr>
-    
-             <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/auth">
+
+            <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/auth">
                 아이디 : <input type="text" name="userId"><br>
                 비밀번호 : <input type="password" name="userPw"><br>
                 <input type="submit" value="로그인">
@@ -74,25 +74,25 @@ api.post('/users', async (ctx, next) => {
     // }
 
     // userId 중복 체크를 미리 진행하는 쪽으로 변경하여 해당 코드는 없어질 예정
-    let duplicate = false;
-    await model.sequelize.models.Users.findOne({
-        where: { userId: userId }
-    }).then(result => {
-        if(result) {
-            console.log("[User]Create Failed: Duplicate Id");
-            ctx.body = "The Id that already exists.";
-            duplicate = true;
-            ctx.status = 200;
-        }
-    }).catch(err => {
-        console.log(err);
-        ctx.status = 500;
-    });
+    // let duplicate = false;
+    // await model.sequelize.models.Users.findOne({
+    //     where: { userId: userId }
+    // }).then(result => {
+    //     if(result) {
+    //         console.log("[User]Create Failed: Duplicate Id");
+    //         ctx.body = "The Id that already exists.";
+    //         duplicate = true;
+    //         ctx.status = 200;
+    //     }
+    // }).catch(err => {
+    //     console.log(err);
+    //     ctx.status = 500;
+    // });
 
     const salt = crypto.randomBytes(64).toString('base64');
     const encryptedPw = crypto.pbkdf2Sync(userPw, salt, 10000, 128, 'sha512').toString('base64');
 
-    if(!duplicate) {
+    // if(!duplicate) {
         await model.sequelize.models.Users.create({
             userId: userId, userPw: encryptedPw, salt: salt, name: name, engName: engName
         }).then(() => {
@@ -102,7 +102,7 @@ api.post('/users', async (ctx, next) => {
             console.log(err);
             ctx.status = 500;
         });
-    }
+    // }
 });
 
 // ID 중복 체크 API
@@ -255,7 +255,7 @@ api.delete('/users', async (ctx, next) => {
 // req: userId(기존 유저 Id/string), userPw(기존 유저 Pw/string)
 // res: 성공 - OK(200) + Access token(+) / 실패 - Fail message(401) / 에러 - Error message(500)
 api.post('/auth', async (ctx, next) => {
-    const { userId, userPw } = ctx.request.body;
+    const { userId, userPw, codeData } = ctx.request.body;
 
     // // userId, userPw가 undefined인 경우는 front-end에서 소거, type은 string으로 보장
     // // client 연산의 임시 코드
@@ -276,42 +276,76 @@ api.post('/auth', async (ctx, next) => {
     // }
 
     // userId 중복 체크를 미리 진행하는 쪽으로 변경하여 해당 코드는 없어질 예정
-    let duplicate = true;
-    await model.sequelize.models.Users.findOne({
-        where: { userId: userId }
-    }).then(result => {
-        if(!result) {
-            console.log("[Auth]Create Failed: Nonexistent Id");
-            ctx.body = "There is no user with that Id.";
-            duplicate = false;
+    // let duplicate = true;
+    // await model.sequelize.models.Users.findOne({
+    //     where: { userId: userId }
+    // }).then(result => {
+    //     if(!result) {
+    //         console.log("[Auth]Create Failed: Nonexistent Id");
+    //         ctx.body = "There is no user with that Id.";
+    //         duplicate = false;
+    //     }
+    // }).catch(err => {
+    //     console.log(err);
+    //     ctx.status = 500;
+    // });
+
+    // if(duplicate) {
+        // 일반 로그인 시도
+        if(userId !== "" && userPw !== "") {
+            await model.sequelize.models.Users.findOne({
+                where: { userId: userId }
+            }).then(result => {
+                const encryptedPw = crypto.pbkdf2Sync(userPw, result.salt, 10000, 128, 'sha512').toString('base64');
+    
+                if(result.userPw !== encryptedPw) {
+                    console.log("[Auth]Create Failed: Incorrect Password");
+                    ctx.body = "The password is incorrect.";
+                    ctx,status = 401;
+                }
+                else {
+                    console.log("[Auth]Create Success: Token Created");
+                    const accessToken = token.generateToken({ userId: userId });
+    
+                    ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+                    ctx.status = 200;
+                }
+            }).catch(err => {
+                console.log(err);
+                ctx.status = 500;
+            });
         }
-    }).catch(err => {
-        console.log(err);
-        ctx.status = 500;
-    });
+        // QR 로그인 시도
+        else {
+            await model.sequelize.models.QRCodes.findOne({
+                where: { codeData: codeData }
+            }).then(async result => {
+                // 누군가가 비정상적인 접근 시도를 하는 경우
+                if(!result || result.userId === null) {
+                    console.log("[Auth]Create Failed: Invalid QR Code");
+                    ctx.body = "Invalid qr code.";
+                    ctx.status = 401;
+                }
+                else {
+                    await model.sequelize.models.QRCodes.destroy({
+                        where: { codeData: codeData }
+                    }).then(() => {
+                        console.log("[Auth]Create Success: Token Created");
+                        const accessToken = token.generateToken({ userId: result.userId });
 
-    if(duplicate) {
-        await model.sequelize.models.Users.findOne({
-            where: { userId: userId }
-        }).then(result => {
-            const encryptedPw = crypto.pbkdf2Sync(userPw, result.salt, 10000, 128, 'sha512').toString('base64');
-
-            if(result.userPw !== encryptedPw) {
-                console.log("[Auth]Create Failed: Incorrect Password");
-                ctx.body = "The password is incorrect.";
-                ctx,status = 401;
-            }
-            else {
-                console.log("[Auth]Create Success: Token Created");
-                const accessToken = token.generateToken({ userId: userId });
-                ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
-                ctx.status = 200;
-            }
-        }).catch(err => {
-            console.log(err);
-            ctx.status = 500;
-        });
-    }
+                        ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+                        ctx.status = 200;
+                    }).catch(err => {
+                        console.log(err);
+                        ctx.status = 500;
+                    });
+                }
+            }).catch(err => {
+                console.log(err);
+                ctx.status = 500;
+            });
+        }
+    // }
 });
 
 // 로그아웃 API
@@ -350,7 +384,7 @@ api.get('/auth', (ctx, next) => {
         let decodedToken = token.decodeToken(accessToken);
 
         console.log("[Auth]Read Success: Login");
-        ctx.body = "Welcome " + decodedToken.id + "!";
+        ctx.body = "Welcome " + decodedToken.userId + "!";
         ctx.status = 200;
     }
 });
@@ -422,11 +456,11 @@ api.get('/codes/:codeData', async (ctx, next) => {
                 });
             }
             else {
-                // random 토큰이 있는데 QR로 인식한 토큰이 아닐 경우
+                // qr code data가 있는데 QR로 인식한 data가 아닐 경우
                 // 인증된 사용자가 고의적인 url 입력할 가능성 있음
                 // 인증된 사용자로부터의 이상 행동, 혹은 토큰 탍취 후 QR 로그인 방식을 지각하지 못한 경우
                 console.log("[QR]Update Failed: Invalid QR Code");
-                ctx.body = "Invalid token.";
+                ctx.body = "Invalid qr code.";
                 ctx.status = 404;
             }
         }).catch(err => {
@@ -447,17 +481,11 @@ api.put('/codes/:codeData', async (ctx, next) => {
         where: { codeData: codeData },
         attributes: [ 'userId' ]
     }).then(result => {
-        if(result) {
-            const accessToken = token.generateToken({ userId: result.userId });
-
-            ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
-
-            // front-end 업데이트 필요
-            ctx.body = { userId: result.userId };
+        if(!result || result.userId === null) {
+            ctx.body = { userId: null };
         }
         else {
-            // front-end 업데이트 필요
-            ctx.body = { userId: null };
+            ctx.body = { userId: result.userId };
         }
         ctx.status = 200;
     }).catch(err => {
