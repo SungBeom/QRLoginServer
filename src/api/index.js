@@ -74,25 +74,25 @@ api.post('/users', async (ctx, next) => {
     // }
 
     // userId 중복 체크를 미리 진행하는 쪽으로 변경하여 해당 코드는 없어질 예정
-    let duplicate = false;
-    await model.sequelize.models.Users.findOne({
-        where: { userId: userId }
-    }).then(result => {
-        if(result) {
-            console.log("[User]Create Failed: Duplicate Id");
-            ctx.body = "The Id that already exists.";
-            duplicate = true;
-            ctx.status = 200;
-        }
-    }).catch(err => {
-        console.log(err);
-        ctx.status = 500;
-    });
+    // let duplicate = false;
+    // await model.sequelize.models.Users.findOne({
+    //     where: { userId: userId }
+    // }).then(result => {
+    //     if(result) {
+    //         console.log("[User]Create Failed: Duplicate Id");
+    //         ctx.body = "The Id that already exists.";
+    //         duplicate = true;
+    //         ctx.status = 200;
+    //     }
+    // }).catch(err => {
+    //     console.log(err);
+    //     ctx.status = 500;
+    // });
 
     const salt = crypto.randomBytes(64).toString('base64');
     const encryptedPw = crypto.pbkdf2Sync(userPw, salt, 10000, 128, 'sha512').toString('base64');
 
-    if(!duplicate) {
+    // if(!duplicate) {
         await model.sequelize.models.Users.create({
             userId: userId, userPw: encryptedPw, salt: salt, name: name, engName: engName
         }).then(() => {
@@ -102,7 +102,7 @@ api.post('/users', async (ctx, next) => {
             console.log(err);
             ctx.status = 500;
         });
-    }
+    // }
 });
 
 // ID 중복 체크 API
@@ -276,23 +276,23 @@ api.post('/auth', async (ctx, next) => {
     // }
 
     // userId 중복 체크를 미리 진행하는 쪽으로 변경하여 해당 코드는 없어질 예정
-    let duplicate = true;
-    await model.sequelize.models.Users.findOne({
-        where: { userId: userId }
-    }).then(result => {
-        if(!result) {
-            console.log("[Auth]Create Failed: Nonexistent Id");
-            ctx.body = "There is no user with that Id.";
-            duplicate = false;
-        }
-    }).catch(err => {
-        console.log(err);
-        ctx.status = 500;
-    });
+    // let duplicate = true;
+    // await model.sequelize.models.Users.findOne({
+    //     where: { userId: userId }
+    // }).then(result => {
+    //     if(!result) {
+    //         console.log("[Auth]Create Failed: Nonexistent Id");
+    //         ctx.body = "There is no user with that Id.";
+    //         duplicate = false;
+    //     }
+    // }).catch(err => {
+    //     console.log(err);
+    //     ctx.status = 500;
+    // });
 
-    if(duplicate) {
+    // if(duplicate) {
         // 일반 로그인 시도
-        if(userId !== null && userPw !== null) {
+        if(userId !== "" && userPw !== "") {
             await model.sequelize.models.Users.findOne({
                 where: { userId: userId }
             }).then(result => {
@@ -319,7 +319,7 @@ api.post('/auth', async (ctx, next) => {
         else {
             await model.sequelize.models.QRCodes.findOne({
                 where: { codeData: codeData }
-            }).then(result => {
+            }).then(async result => {
                 // 누군가가 비정상적인 접근 시도를 하는 경우
                 if(!result || result.userId === null) {
                     console.log("[Auth]Create Failed: Invalid QR Code");
@@ -327,18 +327,25 @@ api.post('/auth', async (ctx, next) => {
                     ctx.status = 401;
                 }
                 else {
-                    console.log("[Auth]Create Success: Token Created");
-                    const accessToken = token.generateToken({ userId: result.userId });
+                    await model.sequelize.models.QRCodes.destroy({
+                        where: { codeData: codeData }
+                    }).then(() => {
+                        console.log("[Auth]Create Success: Token Created");
+                        const accessToken = token.generateToken({ userId: result.userId });
 
-                    ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
-                    ctx.status = 200;
+                        ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+                        ctx.status = 200;
+                    }).catch(err => {
+                        console.log(err);
+                        ctx.status = 500;
+                    });
                 }
             }).catch(err => {
                 console.log(err);
                 ctx.status = 500;
             });
         }
-    }
+    // }
 });
 
 // 로그아웃 API
