@@ -291,6 +291,7 @@ api.post('/auth', async (ctx, next) => {
     });
 
     if(duplicate) {
+        // 일반 로그인 시도
         if(userId !== null && userPw !== null) {
             await model.sequelize.models.Users.findOne({
                 where: { userId: userId }
@@ -314,10 +315,12 @@ api.post('/auth', async (ctx, next) => {
                 ctx.status = 500;
             });
         }
+        // QR 로그인 시도
         else {
             await model.sequelize.models.QRCodes.findOne({
                 where: { codeData: codeData }
             }).then(result => {
+                // 누군가가 비정상적인 접근 시도를 하는 경우
                 if(!result || result.userId === null) {
                     console.log("[Auth]Create Failed: Invalid QR Code");
                     ctx.body = "Invalid qr code.";
@@ -446,7 +449,7 @@ api.get('/codes/:codeData', async (ctx, next) => {
                 });
             }
             else {
-                // random 토큰이 있는데 QR로 인식한 토큰이 아닐 경우
+                // qr code data가 있는데 QR로 인식한 data가 아닐 경우
                 // 인증된 사용자가 고의적인 url 입력할 가능성 있음
                 // 인증된 사용자로부터의 이상 행동, 혹은 토큰 탍취 후 QR 로그인 방식을 지각하지 못한 경우
                 console.log("[QR]Update Failed: Invalid QR Code");
