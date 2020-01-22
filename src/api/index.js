@@ -27,8 +27,8 @@ api.get('/', async (ctx, next) => {
         <body>
             login로그인 페이지<br>
             <hr>
-    
-             <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/auth">
+
+            <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/auth">
                 아이디 : <input type="text" name="userId"><br>
                 비밀번호 : <input type="password" name="userPw"><br>
                 <input type="submit" value="로그인">
@@ -304,6 +304,7 @@ api.post('/auth', async (ctx, next) => {
             else {
                 console.log("[Auth]Create Success: Token Created");
                 const accessToken = token.generateToken({ userId: userId });
+
                 ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
                 ctx.status = 200;
             }
@@ -350,7 +351,7 @@ api.get('/auth', (ctx, next) => {
         let decodedToken = token.decodeToken(accessToken);
 
         console.log("[Auth]Read Success: Login");
-        ctx.body = "Welcome " + decodedToken.id + "!";
+        ctx.body = "Welcome " + decodedToken.userId + "!";
         ctx.status = 200;
     }
 });
@@ -447,17 +448,15 @@ api.put('/codes/:codeData', async (ctx, next) => {
         where: { codeData: codeData },
         attributes: [ 'userId' ]
     }).then(result => {
-        if(result) {
-            const accessToken = token.generateToken({ userId: result.userId });
-
-            ctx.cookies.set('accessToken', accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
-
-            // front-end 업데이트 필요
-            ctx.body = { userId: result.userId };
+        if(result.userId === null) {
+            ctx.body = { userId: null };
         }
         else {
-            // front-end 업데이트 필요
-            ctx.body = { userId: null };
+            console.log("[QR]Create Success: Token Created");
+            const accessToken = token.generateToken({ userId: result.userId });
+            ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+            
+            ctx.body = { userId: result.userId };
         }
         ctx.status = 200;
     }).catch(err => {
