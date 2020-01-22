@@ -255,7 +255,7 @@ api.delete('/users', async (ctx, next) => {
 // req: userId(기존 유저 Id/string), userPw(기존 유저 Pw/string)
 // res: 성공 - OK(200) + Access token(+) / 실패 - Fail message(401) / 에러 - Error message(500)
 api.post('/auth', async (ctx, next) => {
-    const { userId, userPw } = ctx.request.body;
+    const { userId, userPw, codeData } = ctx.request.body;
 
     // // userId, userPw가 undefined인 경우는 front-end에서 소거, type은 string으로 보장
     // // client 연산의 임시 코드
@@ -291,27 +291,50 @@ api.post('/auth', async (ctx, next) => {
     });
 
     if(duplicate) {
-        await model.sequelize.models.Users.findOne({
-            where: { userId: userId }
-        }).then(result => {
-            const encryptedPw = crypto.pbkdf2Sync(userPw, result.salt, 10000, 128, 'sha512').toString('base64');
+        if(userId !== null && userPw !== null) {
+            await model.sequelize.models.Users.findOne({
+                where: { userId: userId }
+            }).then(result => {
+                const encryptedPw = crypto.pbkdf2Sync(userPw, result.salt, 10000, 128, 'sha512').toString('base64');
+    
+                if(result.userPw !== encryptedPw) {
+                    console.log("[Auth]Create Failed: Incorrect Password");
+                    ctx.body = "The password is incorrect.";
+                    ctx,status = 401;
+                }
+                else {
+                    console.log("[Auth]Create Success: Token Created");
+                    const accessToken = token.generateToken({ userId: userId });
+    
+                    ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+                    ctx.status = 200;
+                }
+            }).catch(err => {
+                console.log(err);
+                ctx.status = 500;
+            });
+        }
+        else {
+            await model.sequelize.models.QRCodes.findOne({
+                where: { codeData: codeData }
+            }).then(result => {
+                if(!result || result.userId === null) {
+                    console.log("[Auth]Create Failed: Invalid QR Code");
+                    ctx.body = "Invalid qr code.";
+                    ctx.status = 401;
+                }
+                else {
+                    console.log("[Auth]Create Success: Token Created");
+                    const accessToken = token.generateToken({ userId: result.userId });
 
-            if(result.userPw !== encryptedPw) {
-                console.log("[Auth]Create Failed: Incorrect Password");
-                ctx.body = "The password is incorrect.";
-                ctx,status = 401;
-            }
-            else {
-                console.log("[Auth]Create Success: Token Created");
-                const accessToken = token.generateToken({ userId: userId });
-
-                ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
-                ctx.status = 200;
-            }
-        }).catch(err => {
-            console.log(err);
-            ctx.status = 500;
-        });
+                    ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+                    ctx.status = 200;
+                }
+            }).catch(err => {
+                console.log(err);
+                ctx.status = 500;
+            });
+        }
     }
 });
 
@@ -427,7 +450,7 @@ api.get('/codes/:codeData', async (ctx, next) => {
                 // 인증된 사용자가 고의적인 url 입력할 가능성 있음
                 // 인증된 사용자로부터의 이상 행동, 혹은 토큰 탍취 후 QR 로그인 방식을 지각하지 못한 경우
                 console.log("[QR]Update Failed: Invalid QR Code");
-                ctx.body = "Invalid token.";
+                ctx.body = "Invalid qr code.";
                 ctx.status = 404;
             }
         }).catch(err => {
@@ -448,14 +471,10 @@ api.put('/codes/:codeData', async (ctx, next) => {
         where: { codeData: codeData },
         attributes: [ 'userId' ]
     }).then(result => {
-        if(result.userId === null) {
+        if(!result || result.userId === null) {
             ctx.body = { userId: null };
         }
         else {
-            console.log("[QR]Create Success: Token Created");
-            const accessToken = token.generateToken({ userId: result.userId });
-            ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
-            
             ctx.body = { userId: result.userId };
         }
         ctx.status = 200;
