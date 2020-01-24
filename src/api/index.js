@@ -140,7 +140,7 @@ api.get('/users', async (ctx, next) => {
         const decodedToken = token.decodeToken(accessToken);
 
         await model.sequelize.models.Users.findOne({
-            where: { userId: decodedToken.id }
+            where: { userId: decodedToken.userId }
         }).then(result => {
             if(result) {
                 let searchInfo = {};
