@@ -1,8 +1,12 @@
+const http = require('http');
+const https = require('https');
+
 const Koa = require('koa');
 const Router = require('koa-router');
 const bodyParser = require('koa-bodyparser');
 // const session = require('koa-session');
 const cors = require('@koa/cors');
+
 require('dotenv').config();
 
 const app = new Koa();
@@ -26,6 +30,16 @@ app.use(router.allowedMethods());
 //     console.log(n);
 // });
 
-app.listen(process.env.SERVER_PORT, () => {
-    console.log('server is listening to port ' + process.env.SERVER_PORT);
+// app.listen(process.env.SERVER_PORT, () => {
+//     console.log('server is listening to port ' + process.env.SERVER_PORT);
+// });
+
+// http
+http.createServer(app.callback()).listen(process.env.SERVER_PORT, () => {
+    console.log('http: server is listening to port ' + process.env.SERVER_PORT);
+});
+
+// https
+https.createServer(app.callback()).listen(process.env.SERVER_PORT2, () => {
+    console.log('https: server is listening to port ' + process.env.SERVER_PORT2);
 });
