@@ -15,26 +15,7 @@ model.sequelize.sync().then(() => {
 
 // 로그인 테스트, front-end의 기능을 임시 구현
 api.get('/', async (ctx, next) => {
-    // ctx.body = "API Server";
-    // ctx.status = 200;
-
-    ctx.body = `<!DOCTYPE html>
-    <html>
-        <head>
-            <title>로그인 페이지</title>
-            <meta charset="utf-8">
-        </head>
-        <body>
-            login로그인 페이지<br>
-            <hr>
-
-            <form name="login_form" method="post" action="http://` + process.env.SERVER_IP + ":" + process.env.SERVER_PORT + `/auth">
-                아이디 : <input type="text" name="userId"><br>
-                비밀번호 : <input type="password" name="userPw"><br>
-                <input type="submit" value="로그인">
-            </form>
-        </body>
-    </html>`;
+    ctx.body = "QRLogin API Server.";
     ctx.status = 200;
 });
 
