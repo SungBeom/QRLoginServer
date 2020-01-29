@@ -34,12 +34,17 @@ app.use(router.allowedMethods());
 //     console.log('server is listening to port ' + process.env.SERVER_PORT);
 // });
 
+// const options = {
+//     key: fs.readFileSync('config/domain_key.pem'),
+//     cert: fs.readFileSync('config/domain_crt.pem')
+// };
+
 // http
 http.createServer(app.callback()).listen(process.env.SERVER_PORT, () => {
     console.log('http: server is listening to port ' + process.env.SERVER_PORT);
 });
 
-// https
-https.createServer(app.callback()).listen(process.env.SERVER_PORT2, () => {
-    console.log('https: server is listening to port ' + process.env.SERVER_PORT2);
-});
+// // https
+// https.createServer(options, app.callback()).listen(process.env.SERVER_PORT, () => {
+//     console.log('https: server is listening to port ' + process.env.SERVER_PORT);
+// });
