@@ -236,7 +236,7 @@ api.delete('/users', async (ctx, next) => {
 // req: userId(기존 유저 Id/string), userPw(기존 유저 Pw/string)
 // res: 성공 - OK(200) + Access token(+) / 실패 - Fail message(401) / 에러 - Error message(500)
 api.post('/auth', async (ctx, next) => {
-    const { userId, userPw, codeData } = ctx.request.body;
+    const { userId, userPw, codeData, kakaoToken } = ctx.request.body;
 
     // // userId, userPw가 undefined인 경우는 front-end에서 소거, type은 string으로 보장
     // // client 연산의 임시 코드
@@ -270,6 +270,11 @@ api.post('/auth', async (ctx, next) => {
     //     console.log(err);
     //     ctx.status = 500;
     // });
+    if(kakaoToken !== "") {
+        console.log(kakaoToken);
+        ctx.status = 200;
+        return;
+    }
 
     // if(duplicate) {
         // 일반 로그인 시도
