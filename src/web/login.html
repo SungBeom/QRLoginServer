@@ -37,6 +37,9 @@
                                     <label for="codedata">QR code 데이터</label>
                                     <input name="codeData" id="codedata" value='' placeholder="Code Data" type="text" class="form-control">
                                 </div>
+                                <div class="form-group" style="display: none">
+                                    <input name="kakaoToken" id="kakaotoken" value='' type="text" class="form-control">
+                                </div>
                                 <div class="form-group">
                                     <input type="submit" class="btn btn-default btn-login-submit btn-block m-t-md" value="Submit">
                                 </div>
@@ -50,10 +53,9 @@
                                     Kakao.Auth.createLoginButton({
                                         container: '#kakao-login-btn',
                                         success: function(authObj) {
-                                            // alert(JSON.stringify(authObj));
+                                            document.getElementById("kakaotoken").value = authObj.access_token;
 
-                                            const auth = JSON.stringify(authObj);
-                                            console.log(auth);
+                                            document.loginForm.submit();
                                         },
                                         fail: function(err) {
                                             alert(JSON.stringify(err));
