@@ -1,6 +1,7 @@
 const Router = require('koa-router');
 const model = require('../database/models');
 const token = require('../lib/token');
+const fetch = require('node-fetch');
 const crypto = require('crypto');
 const uuidv4 = require('uuid/v4');
 
@@ -271,7 +272,11 @@ api.post('/auth', async (ctx, next) => {
     //     ctx.status = 500;
     // });
     if(kakaoToken !== "") {
-        console.log(kakaoToken);
+        fetch("https://kapi.kakao.com/v1/api/talk/profile", { headers: { "Authorization": "Bearer " + kakaoToken }})
+        .then(res => res.json()).then(result => {
+            console.log(result);
+        });
+
         ctx.status = 200;
         return;
     }
