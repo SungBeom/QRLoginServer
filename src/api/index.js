@@ -1,6 +1,7 @@
 const Router = require('koa-router');
 const model = require('../database/models');
 const token = require('../lib/token');
+const fetch = require('node-fetch');
 const crypto = require('crypto');
 const uuidv4 = require('uuid/v4');
 
@@ -270,15 +271,38 @@ api.post('/auth', async (ctx, next) => {
     //     console.log(err);
     //     ctx.status = 500;
     // });
-    if(kakaoToken !== "") {
-        console.log(kakaoToken);
-        ctx.status = 200;
-        return;
-    }
 
     // if(duplicate) {
+        // 카카오 로그인 시도
+        if(kakaoToken !== "") {
+            let nickName = "";
+            await fetch("https://kapi.kakao.com/v1/api/talk/profile", { headers: { "Authorization": "Bearer " + kakaoToken }})
+            .then(res => res.json()).then(result => {
+                console.log(result);
+                // 누군가가 비정상적인 접근 시도를 하는 경우
+                if(result.nickName === undefined) {
+                    console.log("[Auth]Create Failed: Invalid Kakao Token");
+                    ctx.body = "Invalid kakao token.";
+                    ctx.status = 401;
+                }
+                else {
+                    nickName = result.nickName;
+                }
+            }).catch(err => {
+                console.log(err);
+                ctx.status = 500;
+            });
+
+            if(nickName !== "") {
+                console.log("[Auth]Create Success: Token Created");
+                const accessToken = token.generateToken({ userId: nickName });
+
+                ctx.cookies.set("accessToken", accessToken, { httpOnly: false, maxAge: 1000 * 60 * 60 * 21 });
+                ctx.status = 200;
+            }
+        }
         // 일반 로그인 시도
-        if(userId !== "" && userPw !== "") {
+        else if(userId !== "" && userPw !== "") {
             await model.sequelize.models.Users.findOne({
                 where: { userId: userId }
             }).then(result => {
@@ -302,7 +326,7 @@ api.post('/auth', async (ctx, next) => {
             });
         }
         // QR 로그인 시도
-        else {
+        else if(codeData !== "") {
             await model.sequelize.models.QRCodes.findOne({
                 where: { codeData: codeData }
             }).then(async result => {
