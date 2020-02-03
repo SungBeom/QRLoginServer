@@ -290,17 +290,19 @@ api.post('/auth', async (ctx, next) => {
     // if(duplicate) {
         // 카카오 로그인 시도
         if(kakaoToken !== "") {
+            let userId = "";
             let nickName = "";
 
             await fetch("https://kapi.kakao.com/v2/user/me", { headers: { "Authorization": "Bearer " + kakaoToken }})
             .then(res => res.json()).then(result => {
                 // 누군가가 비정상적인 접근 시도를 하는 경우
-                if(result.nickName === undefined) {
+                if(result.kakao_account === undefined) {
                     console.log("[Auth]Create Failed: Invalid Kakao Token");
                     ctx.body = "Invalid kakao token.";
                     ctx.status = 401;
                 }
                 else {
+                    userId = result.id;
                     nickName = result.kakao_account.profile.nickname;
                 }
             }).catch(err => {
@@ -309,11 +311,25 @@ api.post('/auth', async (ctx, next) => {
             });
 
             if(nickName !== "") {
-                console.log("[Auth]Create Success: Token Created");
-                const accessToken = token.generateToken({ userId: nickName });
+                const temp = crypto.randomBytes(64).toString('base64');
+                const salt = crypto.randomBytes(64).toString('base64');
+                const tempPw = crypto.pbkdf2Sync(temp, salt, 10000, 128, 'sha512').toString('base64');
 
-                ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
-                ctx.status = 200;
+                await model.sequelize.models.Users.findOrCreate({
+                    where: { userId: userId },
+                    defaults: {
+                        userId: userId, userPw: tempPw, salt: salt, name: nickName, engName: nickName
+                    }
+                }).then(() => {
+                    console.log("[Auth]Create Success: Token Created");
+                    const accessToken = token.generateToken({ userId: nickName });
+
+                    ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
+                    ctx.status = 200;
+                }).catch(err => {
+                    console.log(err);
+                    ctx.status = 500;
+                });
             }
         }
         // 일반 로그인 시도
