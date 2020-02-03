@@ -35,12 +35,36 @@
                             </div>
                             <hr>
                             <div class="form-group">
-                                <a href="login.html" class="btn btn-default btn-login-submit btn-block m-t-md" onclick="javascript:document.signUpForm.submit();">Submit</a>
+                                <button type="button" class="btn btn-default btn-login-submit btn-block m-t-md" onclick="FormCheck();">Submit</a>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
+        <script>
+            const id = document.getElementById("userid");
+            const pw = document.getElementById("userpw");
+            const uName = document.getElementById("username");
+            const uEngName = document.getElementById("userengname");
+
+            function FormCheck() {
+                if(id.value === "") {
+                    alert("아이디를 입력하세요.");
+                }
+                else if(pw.value === "") {
+                    alert("비밀번호를 입력하세요.");
+                }
+                else if(uName.value === "") {
+                    alert("이름을 입력하세요.");
+                }
+                else if(uEngName.value === "") {
+                    alert("영어 이름을 입력하세요.");
+                }
+                else {
+                    document.signUpForm.submit();
+                }
+            }
+        </script>
     </body>
 </html>
