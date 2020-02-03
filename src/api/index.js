@@ -36,8 +36,8 @@ api.get('/', async (ctx, next) => {
 // res: 성공 - OK(200) / 에러 - Error message(500)
 // Front-end에서 검증(비어 있지 않은 값, 타입 일치, 중복되지 않은 Id)된 값을 전달하므로 실패할 수 없음
 api.post('/users', async (ctx, next) => {
-    if(ctx.request.headers.referer !== process.env.WEB_REFERER) {
-        console.log("[Auth]Create Failed: Unkown referer");
+    if(ctx.request.headers.referer !== process.env.SIGNUP_REFERER) {
+        console.log("[User]Create Failed: Unkown referer");
         ctx.body = "Bad request.";
         ctx.status = 400;
         return;
@@ -245,7 +245,7 @@ api.delete('/users', async (ctx, next) => {
 // req: userId(기존 유저 Id/string), userPw(기존 유저 Pw/string)
 // res: 성공 - OK(200) + Access token(+) / 실패 - Fail message(401) / 에러 - Error message(500)
 api.post('/auth', async (ctx, next) => {
-    if(ctx.request.headers.referer !== process.env.WEB_REFERER) {
+    if(ctx.request.headers.referer !== process.env.LOGIN_REFERER) {
         console.log("[Auth]Create Failed: Unkown referer");
         ctx.body = "Bad request.";
         ctx.status = 400;
@@ -290,18 +290,20 @@ api.post('/auth', async (ctx, next) => {
     // if(duplicate) {
         // 카카오 로그인 시도
         if(kakaoToken !== "") {
+            let userId = "";
             let nickName = "";
-            await fetch("https://kapi.kakao.com/v1/api/talk/profile", { headers: { "Authorization": "Bearer " + kakaoToken }})
+
+            await fetch("https://kapi.kakao.com/v2/user/me", { headers: { "Authorization": "Bearer " + kakaoToken }})
             .then(res => res.json()).then(result => {
-                console.log(result);
                 // 누군가가 비정상적인 접근 시도를 하는 경우
-                if(result.nickName === undefined) {
+                if(result.kakao_account === undefined) {
                     console.log("[Auth]Create Failed: Invalid Kakao Token");
                     ctx.body = "Invalid kakao token.";
                     ctx.status = 401;
                 }
                 else {
-                    nickName = result.nickName;
+                    userId = result.id;
+                    nickName = result.kakao_account.profile.nickname;
                 }
             }).catch(err => {
                 console.log(err);
@@ -309,11 +311,25 @@ api.post('/auth', async (ctx, next) => {
             });
 
             if(nickName !== "") {
-                console.log("[Auth]Create Success: Token Created");
-                const accessToken = token.generateToken({ userId: nickName });
+                const temp = crypto.randomBytes(64).toString('base64');
+                const salt = crypto.randomBytes(64).toString('base64');
+                const tempPw = crypto.pbkdf2Sync(temp, salt, 10000, 128, 'sha512').toString('base64');
 
-                ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
-                ctx.status = 200;
+                await model.sequelize.models.Users.findOrCreate({
+                    where: { userId: userId },
+                    defaults: {
+                        userId: userId, userPw: tempPw, salt: salt, name: nickName, engName: nickName
+                    }
+                }).then(() => {
+                    console.log("[Auth]Create Success: Token Created");
+                    const accessToken = token.generateToken({ userId: nickName });
+
+                    ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
+                    ctx.status = 200;
+                }).catch(err => {
+                    console.log(err);
+                    ctx.status = 500;
+                });
             }
         }
         // 일반 로그인 시도
@@ -428,8 +444,8 @@ api.get('/auth', (ctx, next) => {
 // res: 성공 - random QR code data(200) / 에러: Error message(500)
 // 단순 QR code에 들어갈 데이터를 생성하는 것이므로 실패할 수 없음
 api.post('/codes', async (ctx, next) => {
-    if(ctx.request.headers.referer !== process.env.WEB_REFERER) {
-        console.log("[Auth]Create Failed: Unkown referer");
+    if(ctx.request.headers.referer !== process.env.LOGIN_REFERER) {
+        console.log("[QR]Create Failed: Unkown referer");
         ctx.body = "Bad request.";
         ctx.status = 400;
         return;
@@ -507,8 +523,8 @@ api.get('/codes/:codeData', async (ctx, next) => {
 // res: 성공 - 로그인이 확인된 경우:OK(200) + Access token(+) / 에러 - Error message(500)
 // GET 방식이 적절하나, QR 인식이 GET 방식인 것을 감안해 PUT 방식으로 호출
 api.put('/codes/:codeData', async (ctx, next) => {
-    if(ctx.request.headers.referer !== process.env.WEB_REFERER) {
-        console.log("[Auth]Create Failed: Unkown referer");
+    if(ctx.request.headers.referer !== process.env.LOGIN_REFERER) {
+        console.log("[QR]Read Failed: Unkown referer");
         ctx.body = "Bad request.";
         ctx.status = 400;
         return;
@@ -538,8 +554,8 @@ api.put('/codes/:codeData', async (ctx, next) => {
 // res: 성공 - OK(200) / 에러 - Error message(500)
 // QR code의 데이터는 생성될 때 DB에 등록되므로 없는 데이터 일수가 없기에 실패할 수 없음
 api.delete('/codes/:codeData', async (ctx, next) => {
-    if(ctx.request.headers.referer !== process.env.WEB_REFERER) {
-        console.log("[Auth]Create Failed: Unkown referer");
+    if(ctx.request.headers.referer !== process.env.LOGIN_REFERER) {
+        console.log("[QR]Delete Failed: Unkown referer");
         ctx.body = "Bad request.";
         ctx.status = 400;
         return;
