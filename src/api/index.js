@@ -291,9 +291,9 @@ api.post('/auth', async (ctx, next) => {
         // 카카오 로그인 시도
         if(kakaoToken !== "") {
             let nickName = "";
-            await fetch("https://kapi.kakao.com/v1/api/talk/profile", { headers: { "Authorization": "Bearer " + kakaoToken }})
+
+            await fetch("https://kapi.kakao.com/v2/user/me", { headers: { "Authorization": "Bearer " + kakaoToken }})
             .then(res => res.json()).then(result => {
-                console.log(result);
                 // 누군가가 비정상적인 접근 시도를 하는 경우
                 if(result.nickName === undefined) {
                     console.log("[Auth]Create Failed: Invalid Kakao Token");
@@ -301,7 +301,7 @@ api.post('/auth', async (ctx, next) => {
                     ctx.status = 401;
                 }
                 else {
-                    nickName = result.nickName;
+                    nickName = result.kakao_account.profile.nickname;
                 }
             }).catch(err => {
                 console.log(err);
