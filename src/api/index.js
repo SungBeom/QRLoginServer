@@ -297,7 +297,7 @@ api.post('/auth', async (ctx, next) => {
                 console.log("[Auth]Create Success: Token Created");
                 const accessToken = token.generateToken({ userId: nickName });
 
-                ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, overwirte: true });
+                ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwirte: true });
                 ctx.status = 200;
             }
         }
@@ -317,7 +317,7 @@ api.post('/auth', async (ctx, next) => {
                     console.log("[Auth]Create Success: Token Created");
                     const accessToken = token.generateToken({ userId: userId });
     
-                    ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, overwrite: true });
+                    ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
                     ctx.status = 200;
                 }
             }).catch(err => {
@@ -343,7 +343,7 @@ api.post('/auth', async (ctx, next) => {
                         console.log("[Auth]Create Success: Token Created");
                         const accessToken = token.generateToken({ userId: result.userId });
 
-                        ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, overwrite: true });
+                        ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
                         ctx.status = 200;
                     }).catch(err => {
                         console.log(err);
