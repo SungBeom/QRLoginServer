@@ -131,7 +131,7 @@ codeApi.put('/codes/:codeData', async (ctx, next) => {
     }).then(result => {
 
         // QR Code가 없거나 아직 어떤 사용자도 등록되지 않은 경우
-        if (result !== null || result.userId === null) {
+        if (result === null || result.userId === null) {
             ctx.body = { userId: null };
         }
 
