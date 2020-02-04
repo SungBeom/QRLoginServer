@@ -41,7 +41,7 @@
                                     <input name="kakaoToken" id="kakaotoken" value='' type="text" class="form-control">
                                 </div>
                                 <div class="form-group">
-                                    <input type="submit" class="btn btn-default btn-login-submit btn-block m-t-md" value="Submit">
+                                    <button type="button" class="btn btn-default btn-login-submit btn-block m-t-md" onclick="Login();">Submit</a>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -73,7 +73,6 @@
             </div>
         </div>
         <script>
-            let codeData = "";
             const canvas = document.getElementById("qrcode");
             const button = document.getElementById("qrbutton");
             const login = document.getElementById("basiclogin");
@@ -81,9 +80,24 @@
             const id = document.getElementById("userid");
             const pw = document.getElementById("userpw");
             const data = document.getElementById("codedata");
+            const token = document.getElementById("kakaotoken");
+
+            const TIMER_TICK = 30;
+            const regex = /^[a-zA-Z0-9]+$/;
+
+            function Login() {
+                if (!regex.test(id.value)) {
+                    alert("아이디는 알파벳과 숫자의 조합으로만 사용이 가능합니다.");
+                }
+                else {
+                    data.value = token.value = null;
+                    
+                    document.loginForm.submit();
+                }
+            }
 
             function QRLogin() {
-                if(canvas.style.display === "none") {
+                if (canvas.style.display === "none") {
                     createQR();
                 }
                 else {
@@ -94,7 +108,7 @@
             function createQR() {
                 fetch("http://localhost:3000/codes", { method: 'post' }).then(res => res.json()).then(qrcode => {
                     QRCode.toCanvas(canvas, "http://localhost:3000/codes/" + qrcode.codeData, { width: 300, color: { dark: "#222222FF", light: "#F0F8FFFF" } }, err => {
-                        if(err) console.log(err);
+                        if (err) console.log(err);
                         console.log("Create QR Codes");
 
                         canvas.style.display = "block";
@@ -107,7 +121,7 @@
 
                         let count = 0;
                         let timer = setInterval(() => {
-                            if(++count === 30) {
+                            if (++count === TIMER_TICK) {
                                 fetch("http://localhost:3000/codes/" + qrcode.codeData, { method: 'delete' })
                                 .then(() => {
                                     clearInterval(timer);
@@ -115,8 +129,8 @@
                             }
 
                             fetch("http://localhost:3000/codes/" + qrcode.codeData, { method: 'put' }).then(res2 => res2.json()).then(result => {
-                                if(result.userId !== null) {
-                                    id.value = pw.value = null;
+                                if (result.userId !== null) {
+                                    id.value = pw.value = token.value = null;
                                     data.value = qrcode.codeData;
 
                                     document.loginForm.submit();

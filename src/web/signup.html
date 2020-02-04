@@ -35,7 +35,7 @@
                             </div>
                             <hr>
                             <div class="form-group">
-                                <button type="button" class="btn btn-default btn-login-submit btn-block m-t-md" onclick="FormCheck();">Submit</a>
+                                <button type="button" class="btn btn-default btn-login-submit btn-block m-t-md" onclick="ValidateForm();">Submit</a>
                             </div>
                         </form>
                     </div>
@@ -48,22 +48,27 @@
             const uName = document.getElementById("username");
             const uEngName = document.getElementById("userengname");
 
-            function FormCheck() {
-                if(id.value === "") {
+            const regex = /^[a-zA-Z0-9]+$/;
+
+            function ValidateForm() {
+                if (id.value === "") {
                     alert("아이디를 입력하세요.");
                 }
-                else if(pw.value === "") {
+                else if (!regex.test(id.value)) {
+                    alert("아이디는 알파벳과 숫자의 조합으로만 사용이 가능합니다.");
+                }
+                else if (pw.value === "") {
                     alert("비밀번호를 입력하세요.");
                 }
-                else if(uName.value === "") {
+                else if (uName.value === "") {
                     alert("이름을 입력하세요.");
                 }
-                else if(uEngName.value === "") {
+                else if (uEngName.value === "") {
                     alert("영어 이름을 입력하세요.");
                 }
                 else {
                     fetch("http://localhost:3000/users/ids/" + id.value).then(res => res.json()).then(result => {
-                        if(result === 1) {
+                        if (result === 1) {
                             alert("중복된 아이디입니다.");
                         }
                         else {
