@@ -25,7 +25,7 @@ model.sequelize.sync().then(() => {
  * 로그인 API
  * req: userId(기존 유저 Id/string), userPw(기존 유저 Pw/string), codeData(QR Code로 전달된 data/string), kakaoToken(kakao 토큰/string)
  * res: 성공 - OK(200) + Access token(+) /
- *      실패 - referer가 다른 경우: Fail message(400), 누군가 비정상적인 접근 시도를 하는 경우: Fail message(401) /
+ *      실패 - referer가 다른 경우: Fail message(400), 없는 Id이거나 비밀번호가 불일치하는 경우: Fail message(401), 누군가 비정상적인 접근 시도를 하는 경우: Fail message(403) /
  *      에러 - Error message(500)
  * userId, userPw가 내용을 가질 때: 일반 로그인 / codeData가 내용을 가질 때: QR 로그인 / kakaoToken이 내용을 가질 때: 카카오 로그인
  * 각 로그인 상황이 아닌 경우 나머지는 모두 공백으로 넘어오게 됨
@@ -54,7 +54,7 @@ authApi.post('/auth', async (ctx, next) => {
             if (result.kakao_account === undefined) {
                 console.log("[Auth]Create Failed: Invalid Kakao Token");
                 ctx.body = "Invalid kakao token.";
-                ctx.status = 401;
+                ctx.status = 403;
             }
 
             // 로그인 성공(이후의 if문에 이어짐)
@@ -139,7 +139,7 @@ authApi.post('/auth', async (ctx, next) => {
             if (!result || result.userId === null) {
                 console.log("[Auth]Create Failed: Invalid QR Code");
                 ctx.body = "Invalid qr code.";
-                ctx.status = 401;
+                ctx.status = 403;
             }
 
             // 로그인 성공

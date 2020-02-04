@@ -77,7 +77,7 @@ codeApi.get('/codes/:codeData', async (ctx, next) => {
             where: { codeData: codeData }
         }).then(async result => {
 
-            // 누군가가 비정상적인 접근을 시도하는 경우
+            // QR code가 존재하지 않는 경우
             if (result === null) {
                 console.log("[QR]Update Failed: Invalid QR Code");
                 ctx.body = "Invalid qr code.";

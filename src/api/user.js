@@ -80,7 +80,9 @@ userApi.get('/users/ids/:userId', async (ctx, next) => {
 /*
  * 정보 조회 API
  * req: Access token
- * res: 성공 - User info(200) / 실패 - Fail message(401) / 에러 - Error message(500)
+ * res: 성공 - User info(200) /
+ *      실패 - access 토큰이 없는 경우: Fail message(401), access 토큰은 있으나 존재하지 않는 Id일 경우: Fail message(403) /
+ *      에러 - Error message(500)
  */
 userApi.get('/users', async (ctx, next) => {
     const accessToken = ctx.cookies.get('accessToken');
@@ -102,6 +104,7 @@ userApi.get('/users', async (ctx, next) => {
             if (result === null) {
                 console.log("[User]Read Failed: Nonexistent Id");
                 ctx.body = "There is no user with that Id.";
+                ctx.status = 403;
             }
 
             // 정보 조회 성공
@@ -114,8 +117,8 @@ userApi.get('/users', async (ctx, next) => {
                 searchInfo.engName = result.dataValues.engName;
 
                 ctx.body = searchInfo;
+                ctx.status = 200;
             }
-            ctx.status = 200;
         }).catch(err => {
             console.log(err);
             ctx.status = 500;
