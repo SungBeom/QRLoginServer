@@ -32,7 +32,7 @@ codeApi.post('/codes', async (ctx, next) => {
     if (ctx.request.headers.referer !== process.env.LOGIN_REFERER) {
         console.log("[QR]Create Failed: Unkown referer");
         ctx.body = "Bad request.";
-        ctx.status = 400;
+        ctx.status = STATUS_CODE.BAD_REQUEST;
         return;
     }
 
@@ -45,10 +45,10 @@ codeApi.post('/codes', async (ctx, next) => {
     }).then(result => {
         console.log("[QR]Create Success: QR Code Created");
         ctx.body = { codeData: codeData };
-        ctx.status = 200;
+        ctx.status = STATUS_CODE.OK;
     }).catch(err => {
         console.log(err);
-        ctx.status = 500;
+        ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
     });
 });
 
@@ -68,7 +68,7 @@ codeApi.get('/codes/:codeData', async (ctx, next) => {
     if (accessToken === undefined) {
         console.log("[QR]Update Failed: Login Required");
         ctx.body = "You need to login.";
-        ctx.status = 401;
+        ctx.status = STATUS_CODE.UNAUTHORIZED;
     }
     else {
         let decodedToken = token.decodeToken(accessToken);
@@ -81,7 +81,7 @@ codeApi.get('/codes/:codeData', async (ctx, next) => {
             if (result === null) {
                 console.log("[QR]Update Failed: Invalid QR Code");
                 ctx.body = "Invalid qr code.";
-                ctx.status = 404;
+                ctx.status = STATUS_CODE.NOT_FOUND;
             }
 
             // QR 로그인 성공
@@ -94,15 +94,15 @@ codeApi.get('/codes/:codeData', async (ctx, next) => {
                     where: { codeData: codeData }
                 }).then(() => {
                     console.log("[QR]Update Success: QR Login");
-                    ctx.status = 200;
+                    ctx.status = STATUS_CODE.OK;
                 }).catch(err => {
                     console.log(err);
-                    ctx.status = 500;
+                    ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
                 });
             }
         }).catch(err => {
             console.log(err);
-            ctx.status = 500;
+            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
         });
     }
 });
@@ -119,7 +119,7 @@ codeApi.put('/codes/:codeData', async (ctx, next) => {
     if (ctx.request.headers.referer !== process.env.LOGIN_REFERER) {
         console.log("[QR]Read Failed: Unkown referer");
         ctx.body = "Bad request.";
-        ctx.status = 400;
+        ctx.status = STATUS_CODE.BAD_REQUEST;
         return;
     }
 
@@ -140,10 +140,10 @@ codeApi.put('/codes/:codeData', async (ctx, next) => {
             ctx.body = { userId: result.userId };
         }
 
-        ctx.status = 200;
+        ctx.status = STATUS_CODE.OK;
     }).catch(err => {
         console.log(err);
-        ctx.status = 500;
+        ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
     });
 });
 
@@ -158,7 +158,7 @@ codeApi.delete('/codes/:codeData', async (ctx, next) => {
     if (ctx.request.headers.referer !== process.env.LOGIN_REFERER) {
         console.log("[QR]Delete Failed: Unkown referer");
         ctx.body = "Bad request.";
-        ctx.status = 400;
+        ctx.status = STATUS_CODE.BAD_REQUEST;
         return;
     }
     
@@ -169,10 +169,10 @@ codeApi.delete('/codes/:codeData', async (ctx, next) => {
         where: { codeData: codeData }
     }).then(() => {
         console.log("[QR]Delete Success: QR Code Deleted");
-        ctx.status = 200;
+        ctx.status = STATUS_CODE.OK;
     }).catch(err => {
         console.log(err);
-        ctx.status = 500;
+        ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
     });
 });
 

@@ -1,5 +1,6 @@
 const Router = require('koa-router');
 const model = require('../database/models');
+const token = require('../lib/token');
 const crypto = require('crypto');
 require('dotenv').config();
 
@@ -32,7 +33,7 @@ userApi.post('/users', async (ctx, next) => {
     if (ctx.request.headers.referer !== process.env.SIGNUP_REFERER) {
         console.log("[User]Create Failed: Unkown referer");
         ctx.body = "Bad request.";
-        ctx.status = 400;
+        ctx.status = STATUS_CODE.BAD_REQUEST;
         return;
     }
 
@@ -47,10 +48,10 @@ userApi.post('/users', async (ctx, next) => {
         userId: userId, userPw: encryptedPw, salt: salt, name: name, engName: engName
     }).then(() => {
         console.log("[User]Create Success: Sign Up");
-        ctx.status = 200;
+        ctx.status = STATUS_CODE.OK;
     }).catch(err => {
         console.log(err);
-        ctx.status = 500;
+        ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
     });
 });
 
@@ -70,10 +71,10 @@ userApi.get('/users/ids/:userId', async (ctx, next) => {
 
         // 유저 ID가 중복된 경우 1, 중복되지 않은 경우 0을 body에 넣어줌
         result ? ctx.body = 1 : ctx.body = 0;
-        ctx.status = 200;
+        ctx.status = STATUS_CODE.OK;
     }).catch(err => {
         console.log(err);
-        ctx.status = 500;
+        ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
     })
 });
 
@@ -91,7 +92,7 @@ userApi.get('/users', async (ctx, next) => {
     if (accessToken === undefined) {
         console.log("[User]Search Failed: Login Required");
         ctx.body = "You need to login.";
-        ctx.status = 401;
+        ctx.status = STATUS_CODE.UNAUTHORIZED;
     }
     else {
         const decodedToken = token.decodeToken(accessToken);
@@ -104,7 +105,7 @@ userApi.get('/users', async (ctx, next) => {
             if (result === null) {
                 console.log("[User]Read Failed: Nonexistent Id");
                 ctx.body = "There is no user with that Id.";
-                ctx.status = 403;
+                ctx.status = STATUS_CODE.FORBIDDEN;
             }
 
             // 정보 조회 성공
@@ -117,11 +118,11 @@ userApi.get('/users', async (ctx, next) => {
                 searchInfo.engName = result.dataValues.engName;
 
                 ctx.body = searchInfo;
-                ctx.status = 200;
+                ctx.status = STATUS_CODE.OK;
             }
         }).catch(err => {
             console.log(err);
-            ctx.status = 500;
+            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
         });
     }
 });
@@ -139,7 +140,7 @@ userApi.put('/users', async (ctx, next) => {
     if (accessToken === undefined) {
         console.log("[User]Update Failed: Login Required");
         ctx.body = "You need to login.";
-        ctx.status = 401;
+        ctx.status = STATUS_CODE.UNAUTHORIZED;
     }
 
     // 정보 수정 성공
@@ -157,10 +158,10 @@ userApi.put('/users', async (ctx, next) => {
             where: { userId: decodedToken.userId }
         }).then(() => {
             console.log("[User]Update Success: Change Info");
-            ctx.status = 200;
+            ctx.status = STATUS_CODE.OK;
         }).catch(err => {
             console.log(err);
-            ctx.status = 500;
+            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
         });
     }
 });
@@ -177,7 +178,7 @@ userApi.delete('/users', async (ctx, next) => {
     if (accessToken === undefined) {
         console.log("[User]Delete Failed: Login Required");
         ctx.body = "You need to login.";
-        ctx.status = 401;
+        ctx.status = STATUS_CODE.UNAUTHORIZED;
     }
 
     // 회원 탈퇴 성공
@@ -193,10 +194,10 @@ userApi.delete('/users', async (ctx, next) => {
             where: { userId: decodedToken.userId }
         }).then(() => {
             console.log("[User]Delete success: Sign Out");
-            ctx.status = 200;
+            ctx.status = STATUS_CODE.OK;
         }).catch(err => {
             console.log(err);
-            ctx.status = 500;
+            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
         });
     }
 });

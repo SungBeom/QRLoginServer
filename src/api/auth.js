@@ -36,7 +36,7 @@ authApi.post('/auth', async (ctx, next) => {
     if (ctx.request.headers.referer !== process.env.LOGIN_REFERER) {
         console.log("[Auth]Create Failed: Unkown referer");
         ctx.body = "Bad request.";
-        ctx.status = 400;
+        ctx.status = STATUS_CODE.BAD_REQUEST;
         return;
     }
 
@@ -54,7 +54,7 @@ authApi.post('/auth', async (ctx, next) => {
             if (result.kakao_account === undefined) {
                 console.log("[Auth]Create Failed: Invalid Kakao Token");
                 ctx.body = "Invalid kakao token.";
-                ctx.status = 403;
+                ctx.status = STATUS_CODE.FORBIDDEN;
             }
 
             // 로그인 성공(이후의 if문에 이어짐)
@@ -64,7 +64,7 @@ authApi.post('/auth', async (ctx, next) => {
             }
         }).catch(err => {
             console.log(err);
-            ctx.status = 500;
+            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
         });
 
         // 로그인 성공
@@ -83,10 +83,10 @@ authApi.post('/auth', async (ctx, next) => {
 
                 // access token 발급
                 ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
-                ctx.status = 200;
+                ctx.status = STATUS_CODE.OK;
             }).catch(err => {
                 console.log(err);
-                ctx.status = 500;
+                ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
             });
         }
     }
@@ -101,7 +101,7 @@ authApi.post('/auth', async (ctx, next) => {
             if (result === null) {
                 console.log("[Auth]Create Failed: Incorrect ID/Password");
                 ctx.body = "The ID or password is incorrect.";
-                ctx.status = 401;
+                ctx.status = STATUS_CODE.UNAUTHORIZED;
             }
             else {
                 const encryptedPw = crypto.pbkdf2Sync(userPw, result.salt, 10000, 128, 'sha512').toString('base64');
@@ -110,7 +110,7 @@ authApi.post('/auth', async (ctx, next) => {
                 if (result.userPw !== encryptedPw) {
                     console.log("[Auth]Create Failed: Incorrect ID/Password");
                     ctx.body = "The ID or password is incorrect.";
-                    ctx.status = 401;
+                    ctx.status = STATUS_CODE.UNAUTHORIZED;
                 }
 
                 // 로그인 성공
@@ -120,12 +120,12 @@ authApi.post('/auth', async (ctx, next) => {
     
                     // access token 발급
                     ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
-                    ctx.status = 200;
+                    ctx.status = STATUS_CODE.OK;
                 }
             }
         }).catch(err => {
             console.log(err);
-            ctx.status = 500;
+            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
         });
     }
 
@@ -139,7 +139,7 @@ authApi.post('/auth', async (ctx, next) => {
             if (!result || result.userId === null) {
                 console.log("[Auth]Create Failed: Invalid QR Code");
                 ctx.body = "Invalid qr code.";
-                ctx.status = 403;
+                ctx.status = STATUS_CODE.FORBIDDEN;
             }
 
             // 로그인 성공
@@ -154,15 +154,15 @@ authApi.post('/auth', async (ctx, next) => {
 
                     // access token 발급
                     ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
-                    ctx.status = 200;
+                    ctx.status = STATUS_CODE.OK;
                 }).catch(err => {
                     console.log(err);
-                    ctx.status = 500;
+                    ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
                 });
             }
         }).catch(err => {
             console.log(err);
-            ctx.status = 500;
+            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
         });
     }
 });
@@ -180,7 +180,7 @@ authApi.delete('/auth', (ctx, next) => {
     if (accessToken === undefined) {
         console.log("[Auth]Delete Failed: Login Required");
         ctx.body = "You need to login.";
-        ctx.status = 401;
+        ctx.status = STATUS_CODE.UNAUTHORIZED;
     }
 
     // 로그아웃 성공
@@ -190,7 +190,7 @@ authApi.delete('/auth', (ctx, next) => {
         // access 토큰 폐기
         ctx.cookies.set("accessToken", null);
         ctx.cookies.set("accessToken.sig", null);       
-        ctx.status = 200;
+        ctx.status = STATUS_CODE.OK;
     }
 });
 
@@ -207,7 +207,7 @@ authApi.get('/auth', (ctx, next) => {
     if (accessToken === undefined) {
         console.log("[Auth]Read Failed: Login Required");
         ctx.body = "You need to login.";
-        ctx.status = 401;
+        ctx.status = STATUS_CODE.UNAUTHORIZED;
     }
 
     // 로그인 검증 성공
@@ -216,7 +216,7 @@ authApi.get('/auth', (ctx, next) => {
 
         console.log("[Auth]Read Success: Login");
         ctx.body = "Welcome " + decodedToken.userId + "!";
-        ctx.status = 200;
+        ctx.status = STATUS_CODE.OK;
     }
 });
 

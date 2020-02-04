@@ -8,9 +8,18 @@ const app = new Koa();
 app.keys = [process.env.KOA_APP_KEY];
 const router = new Router();
 
-const userApi = require('./api/user.js');
-const authApi = require('./api/auth.js');
-const codeApi = require('./api/code.js');
+STATUS_CODE = {
+    OK: 200,
+    BAD_REQUEST: 400,
+    UNAUTHORIZED: 401,
+    FORBIDDEN: 403,
+    NOT_FOUND: 404,
+    INTERNET_SERVER_ERROR: 500
+};
+
+const userApi = require('./api/user');
+const authApi = require('./api/auth');
+const codeApi = require('./api/code');
 
 router.use(userApi.routes());
 router.use(authApi.routes());
