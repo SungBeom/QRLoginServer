@@ -35,7 +35,7 @@
                             </div>
                             <hr>
                             <div class="form-group">
-                                <button type="button" class="btn btn-default btn-login-submit btn-block m-t-md" onclick="ValidateForm();">Submit</a>
+                                <button type="button" class="btn btn-default btn-login-submit btn-block m-t-md" onclick="validateForm();">Submit</a>
                             </div>
                         </form>
                     </div>
@@ -50,7 +50,7 @@
 
             const regex = /^[a-zA-Z0-9]+$/;
 
-            function ValidateForm() {
+            function validateForm() {
                 if (id.value === "") {
                     alert("아이디를 입력하세요.");
                 }

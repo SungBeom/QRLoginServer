@@ -20,7 +20,7 @@
                 </div>
                 <div class="col-md-3">
                     <div class="login-box well">
-                        <button id="qrbutton" class="btn btn-default btn-login-submit btn-block m-t-md" onclick="QRLogin()">Login with QR</button>
+                        <button id="qrbutton" class="btn btn-default btn-login-submit btn-block m-t-md" onclick="loginWithQR()">Login with QR</button>
                         <canvas id="qrcode" style="display: none; width: 100%; padding: 10px;"></canvas>
                         <br>
                         <form accept-charset="UTF-8" name="loginForm" role="form" method="post" action="http://localhost:3000/auth" target="_blank">
@@ -41,7 +41,7 @@
                                     <input name="kakaoToken" id="kakaotoken" value='' type="text" class="form-control">
                                 </div>
                                 <div class="form-group">
-                                    <button type="button" class="btn btn-default btn-login-submit btn-block m-t-md" onclick="Login();">Submit</a>
+                                    <button type="button" class="btn btn-default btn-login-submit btn-block m-t-md" onclick="loginWithoutQR();">Submit</a>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -85,7 +85,7 @@
             const TIMER_TICK = 30;
             const regex = /^[a-zA-Z0-9]+$/;
 
-            function Login() {
+            function loginWithoutQR() {
                 if (!regex.test(id.value)) {
                     alert("아이디는 알파벳과 숫자의 조합으로만 사용이 가능합니다.");
                 }
@@ -96,7 +96,7 @@
                 }
             }
 
-            function QRLogin() {
+            function loginWithQR() {
                 if (canvas.style.display === "none") {
                     createQR();
                 }
