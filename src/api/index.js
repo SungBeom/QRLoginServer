@@ -337,19 +337,26 @@ api.post('/auth', async (ctx, next) => {
             await model.sequelize.models.Users.findOne({
                 where: { userId: userId }
             }).then(result => {
-                const encryptedPw = crypto.pbkdf2Sync(userPw, result.salt, 10000, 128, 'sha512').toString('base64');
-    
-                if(result.userPw !== encryptedPw) {
-                    console.log("[Auth]Create Failed: Incorrect Password");
-                    ctx.body = "The password is incorrect.";
-                    ctx,status = 401;
+                if(result === null) {
+                    console.log("[Auth]Create Failed: Incorrect ID/Password");
+                    ctx.body = "The ID or password is incorrect.";
+                    ctx.status = 401;
                 }
                 else {
-                    console.log("[Auth]Create Success: Token Created");
-                    const accessToken = token.generateToken({ userId: userId });
+                    const encryptedPw = crypto.pbkdf2Sync(userPw, result.salt, 10000, 128, 'sha512').toString('base64');
     
-                    ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
-                    ctx.status = 200;
+                    if(result.userPw !== encryptedPw) {
+                        console.log("[Auth]Create Failed: Incorrect ID/Password");
+                        ctx.body = "The ID or password is incorrect.";
+                        ctx.status = 401;
+                    }
+                    else {
+                        console.log("[Auth]Create Success: Token Created");
+                        const accessToken = token.generateToken({ userId: userId });
+        
+                        ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
+                        ctx.status = 200;
+                    }
                 }
             }).catch(err => {
                 console.log(err);
