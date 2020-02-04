@@ -302,7 +302,7 @@ api.post('/auth', async (ctx, next) => {
                     ctx.status = 401;
                 }
                 else {
-                    userId = result.id;
+                    userId = "+" + result.id;
                     nickName = result.kakao_account.profile.nickname;
                 }
             }).catch(err => {
