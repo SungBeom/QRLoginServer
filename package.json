@@ -20,7 +20,6 @@
     "mysql": "^2.17.1",
     "mysql2": "^2.1.0",
     "node-fetch": "^2.6.0",
-    "nodemon": "^2.0.2",
     "qrcode": "^1.4.4",
     "sequelize": "^5.21.3",
     "sequelize-cli": "^5.5.1",
