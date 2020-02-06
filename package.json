@@ -7,6 +7,7 @@
   "license": "MIT",
   "scripts": {
     "start": "pm2 start src --name api-server --instances 0 --watch",
+    "test": "pm2 start src --name api-server --watch",
     "stop": "pm2 stop src",
     "delete": "pm2 delete src"
   },
