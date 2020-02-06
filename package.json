@@ -6,7 +6,7 @@
   "author": "SungBeom <psb_94@naver.com>",
   "license": "MIT",
   "scripts": {
-    "start": "pm2 start src --name api-server --watch",
+    "start": "pm2 start src --name api-server --instances 0 --watch",
     "stop": "pm2 stop src",
     "delete": "pm2 delete src"
   },
