@@ -200,7 +200,7 @@ authApi.delete('/auth', (ctx, next) => {
  * res: 성공 - Welcome message(200) / 실패 - Fail message(401) / 에러 - Error message(500)
  * 토큰 관련 에러가 아니라면 API 내의 에러 상황은 없음
  */
-authApi.get('/auth', (ctx, next) => {
+authApi.get('/auth', async (ctx, next) => {
     let accessToken = ctx.cookies.get('accessToken');
 
     // access 토큰 없음
@@ -214,9 +214,28 @@ authApi.get('/auth', (ctx, next) => {
     else {
         let decodedToken = token.decodeToken(accessToken);
 
-        console.log("[Auth]Read Success: Login");
-        ctx.body = "Welcome " + decodedToken.userId + "!";
-        ctx.status = STATUS_CODE.OK;
+        await model.sequelize.models.Users.findOne({
+            attribute: [ 'name' ],
+            where: { userId: decodedToken.userId }
+        }).then(result => {
+
+            // 존재하지 않는 유저 ID(토큰 없이 불가능)
+            if (result === null) {
+                console.log("[Auth]Read Failed: Nonexistent Id");
+                ctx.body = "There is no user with that Id.";
+                ctx.status = STATUS_CODE.FORBIDDEN;
+            }
+
+            // ID에 등록된 이름 검색 성공
+            else {
+                console.log("[Auth]Read Success: Login");
+                ctx.body = "Welcome " + result.name + "!";
+                ctx.status = STATUS_CODE.OK;
+            }
+        }).catch(err => {
+            console.log(err);
+            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
+        });
     }
 });
 
