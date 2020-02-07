@@ -79,7 +79,7 @@ authApi.post('/auth', async (ctx, next) => {
                 defaults: { userId: userId, userPw: tempPw, salt: salt, name: nickName, engName: nickName }
             }).then(() => {
                 console.log("[Auth]Create Success: Token Created");
-                const accessToken = token.generateToken({ userId: nickName });
+                const accessToken = token.generateToken({ userId: userId });
 
                 // access token 발급
                 ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
