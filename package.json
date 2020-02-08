@@ -6,23 +6,22 @@
   "author": "SungBeom <psb_94@naver.com>",
   "license": "MIT",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src",
-    "start::dev": "nodemon --watch src/ src/index.js"
+    "start": "pm2 start src --name api-server --instances 0 --watch",
+    "test": "pm2 start src --name api-server --watch",
+    "stop": "pm2 stop src",
+    "delete": "pm2 delete src"
   },
   "dependencies": {
     "@koa/cors": "2",
-    "browserify": "^16.5.0",
     "dotenv": "^8.2.0",
     "jsonwebtoken": "^8.5.1",
     "koa": "^2.11.0",
     "koa-bodyparser": "^4.2.1",
     "koa-router": "^7.4.0",
-    "koa-session": "^5.12.3",
     "mysql": "^2.17.1",
     "mysql2": "^2.1.0",
     "node-fetch": "^2.6.0",
-    "nodemon": "^2.0.2",
+    "pm2": "^4.2.3",
     "qrcode": "^1.4.4",
     "sequelize": "^5.21.3",
     "sequelize-cli": "^5.5.1",

@@ -1,50 +1,39 @@
-const http = require('http');
-// const https = require('https');
-
 const Koa = require('koa');
 const Router = require('koa-router');
 const bodyParser = require('koa-bodyparser');
-// const session = require('koa-session');
 const cors = require('@koa/cors');
-
 require('dotenv').config();
 
 const app = new Koa();
 app.keys = [process.env.KOA_APP_KEY];
 const router = new Router();
-const api = require('./api');
 
-router.use(api.routes());
+STATUS_CODE = {
+    OK: 200,
+    BAD_REQUEST: 400,
+    UNAUTHORIZED: 401,
+    FORBIDDEN: 403,
+    NOT_FOUND: 404,
+    INTERNET_SERVER_ERROR: 500
+};
+
+const userApi = require('./api/user');
+const authApi = require('./api/auth');
+const codeApi = require('./api/code');
+
+router.use(userApi.routes());
+router.use(authApi.routes());
+router.use(codeApi.routes());
 
 app.use(cors());
 app.use(bodyParser());
 app.use(router.routes());
 app.use(router.allowedMethods());
-// app.use(session(app));
-// app.use(ctx => {
-//     let n = ctx.session.views || 0;
-//     ctx.session.views = ++n;
 
-//     if(n === 1) ctx.body = 'Welcome here for the first time!';
-//     else ctx.body = "You've visited this page " + n + " times!";
-//     console.log(n);
-// });
-
-// app.listen(process.env.SERVER_PORT, () => {
-//     console.log('server is listening to port ' + process.env.SERVER_PORT);
-// });
-
-// const options = {
-//     key: fs.readFileSync('config/domain_key.pem'),
-//     cert: fs.readFileSync('config/domain_crt.pem')
-// };
-
-// http
-http.createServer(app.callback()).listen(process.env.SERVER_PORT, () => {
-    console.log('http: server is listening to port ' + process.env.SERVER_PORT);
+app.listen(process.env.SERVER_PORT1, () => {
+    console.log('server is listening to port ' + process.env.SERVER_PORT1);
 });
 
-// // https
-// https.createServer(options, app.callback()).listen(process.env.SERVER_PORT, () => {
-//     console.log('https: server is listening to port ' + process.env.SERVER_PORT);
-// });
+app.listen(process.env.SERVER_PORT2, () => {
+    console.log('server is listening to port ' + process.env.SERVER_PORT2);
+});
