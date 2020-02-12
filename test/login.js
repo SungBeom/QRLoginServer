@@ -10,7 +10,7 @@ const engName = "tEngName";
 /*
  * ID 중복 확인(없는 유저)
  */
-describe("GET " + process.env.TEST_API + "/users/ids/" + userId, () => {
+describe("ID 중복 확인(없는 유저)", () => {
     it('200', done => {
         request.get(process.env.TEST_API + "/users/ids/" + userId, (err, res, body) => {
             expect(res.statusCode).to.equal(200);
@@ -23,7 +23,7 @@ describe("GET " + process.env.TEST_API + "/users/ids/" + userId, () => {
 /*
  * 회원 가입
  */
-describe("POST " + process.env.TEST_API + "/users", () => {
+describe("회원 가입", () => {
     it('200', done => {
         const options = {
             url: process.env.TEST_API + "/users",
@@ -47,9 +47,9 @@ describe("POST " + process.env.TEST_API + "/users", () => {
 });
 
 /*
- * ID 중복 조회(있는 유저)
+ * ID 중복 확인(있는 유저)
  */
-describe("GET " + process.env.TEST_API + "/users/ids/" + userId, () => {
+describe("ID 중복 확인(있는 유저)", () => {
     it('200', done => {
         request.get(process.env.TEST_API + "/users/ids/" + userId, (err, res, body) => {
             expect(res.statusCode).to.equal(200);
@@ -62,7 +62,7 @@ describe("GET " + process.env.TEST_API + "/users/ids/" + userId, () => {
 /*
  * 유저 정보 조회(로그인 전)
  */
-describe("GET " + process.env.TEST_API + "/users", () => {
+describe("유저 정보 조회(로그인 전)", () => {
     it('401', done => {
         request.get(process.env.TEST_API + "/users", (err, res, body) => {
             expect(res.statusCode).to.equal(401);
@@ -75,7 +75,7 @@ describe("GET " + process.env.TEST_API + "/users", () => {
 /*
  * 일반(ID, 비밀번호) 로그인 실패
  */
-describe("POST " + process.env.TEST_API + "/auth", () => {
+describe("일반(ID+비밀번호) 로그인 실패", () => {
     it('401', done => {
         const options = {
             url: process.env.TEST_API + "/auth",
@@ -104,7 +104,7 @@ let cookie;
 /*
  * 일반(ID, 비밀번호) 로그인 성공
  */
-describe("POST " + process.env.TEST_API + "/auth", () => {
+describe("일반(ID+비밀번호) 로그인 성공", () => {
     it('200', done => {
         const options = {
             url: process.env.TEST_API + "/auth",
@@ -133,7 +133,7 @@ describe("POST " + process.env.TEST_API + "/auth", () => {
 /*
  * 유저 정보 조회(로그인 후)
  */
-describe("GET " + process.env.TEST_API + "/users", () => {
+describe("유저 정보 조회(로그인 후)", () => {
     it('200', done => {
         const options = {
             url: process.env.TEST_API + "/users",
@@ -159,7 +159,7 @@ describe("GET " + process.env.TEST_API + "/users", () => {
 /*
  * 회원 탈퇴
  */
-describe("DELETE " + process.env.TEST_API + "/users", () => {
+describe("회원 탈퇴", () => {
     it('200', done => {
         const options = {
             url: process.env.TEST_API + "/users",
