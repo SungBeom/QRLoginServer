@@ -101,7 +101,7 @@ userApi.get('/users', async (ctx, next) => {
         } catch(err) {
             console.log("[Auth]Read Failed: Token Expired");
             ctx.body = "Token expired."
-            ctx.status = STATUS_CODE.FORBIDDEN;
+            ctx.status = STATUS_CODE.UNAUTHORIZED;
         }
 
         await model.sequelize.models.Users.findOne({
@@ -158,7 +158,7 @@ userApi.put('/users', async (ctx, next) => {
         } catch(err) {
             console.log("[Auth]Read Failed: Token Expired");
             ctx.body = "Token expired."
-            ctx.status = STATUS_CODE.FORBIDDEN;
+            ctx.status = STATUS_CODE.UNAUTHORIZED;
         }
 
         // 유저 비밀번호 암호화
@@ -203,7 +203,7 @@ userApi.delete('/users', async (ctx, next) => {
         } catch(err) {
             console.log("[Auth]Read Failed: Token Expired");
             ctx.body = "Token expired."
-            ctx.status = STATUS_CODE.FORBIDDEN;
+            ctx.status = STATUS_CODE.UNAUTHORIZED;
         }
 
         // access 토큰 폐기
