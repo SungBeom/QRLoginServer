@@ -189,6 +189,35 @@ describe("유저 정보 조회(로그아웃 후)", () => {
 });
 
 /*
+ * 토큰 재발급을 위한 로그인
+ */
+describe("토큰 재발급을 위한 로그인", () => {
+    it('200', done => {
+        const options = {
+            url: process.env.TEST_API + "/auth",
+            headers: {
+                'referer': process.env.TEST_LOGIN_REFERER
+            },
+            body: {
+                'userId': userId,
+                'userPw': userPw,
+                'codeData': "",
+                'kakaoToken': ""
+            },
+            json: true
+        }
+
+        request.post(options, (err, res, body) => {
+            expect(res.statusCode).to.equal(200);
+            expect(res).to.cookie('accessToken');
+            expect(res).to.cookie('accessToken.sig');
+            cookie = res.headers['set-cookie'];
+            done();
+        });
+    });
+});
+
+/*
  * 회원 탈퇴
  */
 describe("회원 탈퇴", () => {
