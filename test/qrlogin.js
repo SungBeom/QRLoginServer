@@ -64,7 +64,7 @@ describe("[A]일반(ID+비밀번호) 로그인 성공", () => {
     });
 });
 
-let qrUrl;
+let codeData;
 
 /*
  * [B]QR 코드 데이터 생성
@@ -80,7 +80,7 @@ describe("[B]QR 코드 데이터 생성", () => {
 
         request.post(options, (err, res, body) => {
             expect(res.statusCode).to.equal(200);
-            qrUrl = process.env.TEST_API + "/codes/" + JSON.parse(body).codeData;
+            codeData = JSON.parse(body).codeData;
             done();
         });
     });
@@ -92,7 +92,7 @@ describe("[B]QR 코드 데이터 생성", () => {
 describe("[B]QR 로그인 정보 확인(QR 코드 인식 전)", () => {
     it('200', done => {
         const options = {
-            url: qrUrl,
+            url: process.env.TEST_API + "/codes/" + codeData,
             headers: {
                 'referer': process.env.TEST_LOGIN_REFERER
             }
@@ -116,7 +116,7 @@ describe("[B]QR 로그인 정보 확인(QR 코드 인식 전)", () => {
 describe("[A]QR 코드 인식", () => {
     it('200', done => {
         const options = {
-            url: qrUrl,
+            url: process.env.TEST_API + "/codes/" + codeData,
             headers: {
                 'Cookie': cookie
             }
@@ -136,7 +136,7 @@ describe("[A]QR 코드 인식", () => {
 describe("[B]QR 로그인 정보 확인(QR 코드 인식 후)", () => {
     it('200', done => {
         const options = {
-            url: qrUrl,
+            url: process.env.TEST_API + "/codes/" + codeData,
             headers: {
                 'referer': process.env.TEST_LOGIN_REFERER
             }
@@ -155,9 +155,38 @@ describe("[B]QR 로그인 정보 확인(QR 코드 인식 후)", () => {
 });
 
 /*
- * 회원 탈퇴
+ * [B]QR 로그인 성공
  */
-describe("회원 탈퇴", () => {
+describe("[B]QR 로그인 성공", () => {
+    it('200', done => {
+        const options = {
+            url: process.env.TEST_API + "/auth",
+            headers: {
+                'referer': process.env.TEST_LOGIN_REFERER
+            },
+            body: {
+                'userId': "",
+                'userPw': "",
+                'codeData': codeData,
+                'kakaoToken': ""
+            },
+            json: true
+        }
+
+        request.post(options, (err, res, body) => {
+            expect(res.statusCode).to.equal(200);
+            expect(res).to.cookie('accessToken');
+            expect(res).to.cookie('accessToken.sig');
+            cookie = res.headers['set-cookie'];
+            done();
+        });
+    });
+});
+
+/*
+ * [B}회원 탈퇴
+ */
+describe("[B]회원 탈퇴", () => {
     it('200', done => {
         const options = {
             url: process.env.TEST_API + "/users",
