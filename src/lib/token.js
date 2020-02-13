@@ -1,10 +1,13 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = {
+
+    // 토큰 생성
     generateToken(payload) {
         return jwt.sign(payload, process.env.JWT_KEY, { expiresIn: '1800000' });
     },
-    // access token 상태에 따른 error handling 필요
+
+    // 토큰 검증
     decodeToken(accessToken) {
         return jwt.verify(accessToken, process.env.JWT_KEY);
     }
