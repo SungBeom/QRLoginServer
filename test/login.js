@@ -157,6 +157,38 @@ describe("유저 정보 조회(로그인 후)", () => {
 });
 
 /*
+ * 로그아웃
+ */
+describe("로그아웃", () => {
+    it('200', done => {
+        const options = {
+            url: process.env.TEST_API + "/auth",
+            headers: {
+                'Cookie': cookie
+            }
+        }
+
+        request.delete(options, (err, res, body) => {
+            expect(res.statusCode).to.equal(200);
+            done();
+        });
+    });
+});
+
+/*
+ * 유저 정보 조회(로그아웃 후)
+ */
+describe("유저 정보 조회(로그아웃 후)", () => {
+    it('401', done => {
+        request.get(process.env.TEST_API + "/users", (err, res, body) => {
+            expect(res.statusCode).to.equal(401);
+            expect(body).to.equal('You need to login.');
+            done();
+        });
+    });
+});
+
+/*
  * 회원 탈퇴
  */
 describe("회원 탈퇴", () => {
