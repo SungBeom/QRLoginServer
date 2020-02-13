@@ -71,7 +71,14 @@ codeApi.get('/codes/:codeData', async (ctx, next) => {
         ctx.status = STATUS_CODE.UNAUTHORIZED;
     }
     else {
-        let decodedToken = token.decodeToken(accessToken);
+        let decodedToken;
+        try {
+            decodedToken = token.decodeToken(accessToken);
+        } catch(err) {
+            console.log("[Auth]Read Failed: Token Expired");
+            ctx.body = "Token expired."
+            ctx.status = STATUS_CODE.FORBIDDEN;
+        }
         
         await model.sequelize.models.QRCodes.findOne({
             where: { codeData: codeData }

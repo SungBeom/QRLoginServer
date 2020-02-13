@@ -212,7 +212,14 @@ authApi.get('/auth', async (ctx, next) => {
 
     // 로그인 검증 성공
     else {
-        let decodedToken = token.decodeToken(accessToken);
+        let decodedToken;
+        try {
+            decodedToken = token.decodeToken(accessToken);
+        } catch(err) {
+            console.log("[Auth]Read Failed: Token Expired");
+            ctx.body = "Token expired."
+            ctx.status = STATUS_CODE.FORBIDDEN;
+        }
 
         await model.sequelize.models.Users.findOne({
             attribute: [ 'name' ],
