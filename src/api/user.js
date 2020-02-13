@@ -95,7 +95,14 @@ userApi.get('/users', async (ctx, next) => {
         ctx.status = STATUS_CODE.UNAUTHORIZED;
     }
     else {
-        const decodedToken = token.decodeToken(accessToken);
+        let decodedToken;
+        try {
+            decodedToken = token.decodeToken(accessToken);
+        } catch(err) {
+            console.log("[Auth]Read Failed: Token Expired");
+            ctx.body = "Token expired."
+            ctx.status = STATUS_CODE.UNAUTHORIZED;
+        }
 
         await model.sequelize.models.Users.findOne({
             where: { userId: decodedToken.userId }
@@ -145,7 +152,14 @@ userApi.put('/users', async (ctx, next) => {
 
     // 정보 수정 성공
     else {
-        const decodedToken = token.decodeToken(accessToken);
+        let decodedToken;
+        try {
+            decodedToken = token.decodeToken(accessToken);
+        } catch(err) {
+            console.log("[Auth]Read Failed: Token Expired");
+            ctx.body = "Token expired."
+            ctx.status = STATUS_CODE.UNAUTHORIZED;
+        }
 
         // 유저 비밀번호 암호화
         const salt = crypto.randomBytes(64).toString('base64');
@@ -183,7 +197,14 @@ userApi.delete('/users', async (ctx, next) => {
 
     // 회원 탈퇴 성공
     else {
-        const decodedToken = token.decodeToken(accessToken);
+        let decodedToken;
+        try {
+            decodedToken = token.decodeToken(accessToken);
+        } catch(err) {
+            console.log("[Auth]Read Failed: Token Expired");
+            ctx.body = "Token expired."
+            ctx.status = STATUS_CODE.UNAUTHORIZED;
+        }
 
         // access 토큰 폐기
         ctx.cookies.set('accessToken', null);
