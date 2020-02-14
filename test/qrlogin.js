@@ -2,6 +2,18 @@ const request = require('request');
 const expect = require('chai').use(require('chai-http')).expect;
 require('dotenv').config();
 
+const STATUS_CODE = {
+    OK: 200
+}
+
+const TIME_LIMIT = {
+    SIGNUP: 2000,
+    SIGNOUT: 3000,
+    GENERATE_QR: 2000,
+    RECOGNIZE_QR: 2000,
+    QR_LOGIN: 2000
+}
+
 const userId = "tId";
 const userPw = "tPw";
 const name = "tName";
@@ -27,10 +39,10 @@ describe("회원 가입", () => {
         }
 
         request.post(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             done();
         });
-    });
+    }).slow(TIME_LIMIT.SIGNUP);
 });
 
 let cookie;
@@ -55,7 +67,7 @@ describe("[A]일반(ID+비밀번호) 로그인 성공", () => {
         }
 
         request.post(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             expect(res).to.cookie('accessToken');
             expect(res).to.cookie('accessToken.sig');
             cookie = res.headers['set-cookie'];
@@ -79,11 +91,11 @@ describe("[B]QR 코드 데이터 생성", () => {
         }
 
         request.post(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             codeData = JSON.parse(body).codeData;
             done();
         });
-    });
+    }).slow(TIME_LIMIT.GENERATE_QR);
 });
 
 /*
@@ -103,7 +115,7 @@ describe("[B]QR 로그인 정보 확인(QR 코드 인식 전)", () => {
         }
 
         request.put(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             expect(body).to.equal(JSON.stringify(result));
             done();
         });
@@ -124,10 +136,10 @@ describe("[A]QR 코드 인식", () => {
 
 
         request.get(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             done();
         });
-    });
+    }).slow(TIME_LIMIT.RECOGNIZE_QR);
 });
 
 /*
@@ -147,7 +159,7 @@ describe("[B]QR 로그인 정보 확인(QR 코드 인식 후)", () => {
         }
 
         request.put(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             expect(body).to.equal(JSON.stringify(result));
             done();
         });
@@ -174,17 +186,17 @@ describe("[B]QR 로그인 성공", () => {
         }
 
         request.post(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             expect(res).to.cookie('accessToken');
             expect(res).to.cookie('accessToken.sig');
             cookie = res.headers['set-cookie'];
             done();
         });
-    });
+    }).slow(TIME_LIMIT.QR_LOGIN);
 });
 
 /*
- * [B}회원 탈퇴
+ * [B]회원 탈퇴
  */
 describe("[B]회원 탈퇴", () => {
     it('200', done => {
@@ -196,8 +208,8 @@ describe("[B]회원 탈퇴", () => {
         }
 
         request.delete(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             done();
         });
-    });
+    }).slow(TIME_LIMIT.SIGNOUT).timeout(TIME_LIMIT.SIGNOUT);
 });
