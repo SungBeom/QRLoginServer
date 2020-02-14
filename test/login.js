@@ -2,6 +2,16 @@ const request = require('request');
 const expect = require('chai').use(require('chai-http')).expect;
 require('dotenv').config();
 
+const STATUS_CODE = {
+    OK: 200,
+    UNAUTHORIZED: 401
+}
+
+const TIME_LIMIT = {
+    SIGNUP: 2000,
+    SIGNOUT: 3000
+}
+
 const userId = "tId";
 const userPw = "tPw";
 const name = "tName";
@@ -13,7 +23,7 @@ const engName = "tEngName";
 describe("ID 중복 확인(없는 유저)", () => {
     it('200', done => {
         request.get(process.env.TEST_API + "/users/ids/" + userId, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             expect(body).to.equal('0');
             done();
         });
@@ -40,10 +50,10 @@ describe("회원 가입", () => {
         }
 
         request.post(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             done();
         });
-    });
+    }).slow(TIME_LIMIT.SIGNUP);
 });
 
 /*
@@ -52,7 +62,7 @@ describe("회원 가입", () => {
 describe("ID 중복 확인(있는 유저)", () => {
     it('200', done => {
         request.get(process.env.TEST_API + "/users/ids/" + userId, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             expect(body).to.equal('1');
             done();
         });
@@ -65,7 +75,7 @@ describe("ID 중복 확인(있는 유저)", () => {
 describe("유저 정보 조회(로그인 전)", () => {
     it('401', done => {
         request.get(process.env.TEST_API + "/users", (err, res, body) => {
-            expect(res.statusCode).to.equal(401);
+            expect(res.statusCode).to.equal(STATUS_CODE.UNAUTHORIZED);
             expect(body).to.equal('You need to login.');
             done();
         });
@@ -92,7 +102,7 @@ describe("일반(ID+비밀번호) 로그인 실패", () => {
         }
 
         request.post(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(401);
+            expect(res.statusCode).to.equal(STATUS_CODE.UNAUTHORIZED);
             expect(body).to.equal('The ID or password is incorrect.');
             done();
         });
@@ -121,7 +131,7 @@ describe("일반(ID+비밀번호) 로그인 성공", () => {
         }
 
         request.post(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             expect(res).to.cookie('accessToken');
             expect(res).to.cookie('accessToken.sig');
             cookie = res.headers['set-cookie'];
@@ -149,7 +159,7 @@ describe("유저 정보 조회(로그인 후)", () => {
         }
 
         request.get(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             expect(body).to.equal(JSON.stringify(result));
             done();
         });
@@ -169,7 +179,7 @@ describe("로그아웃", () => {
         }
 
         request.delete(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             done();
         });
     });
@@ -181,7 +191,7 @@ describe("로그아웃", () => {
 describe("유저 정보 조회(로그아웃 후)", () => {
     it('401', done => {
         request.get(process.env.TEST_API + "/users", (err, res, body) => {
-            expect(res.statusCode).to.equal(401);
+            expect(res.statusCode).to.equal(STATUS_CODE.UNAUTHORIZED);
             expect(body).to.equal('You need to login.');
             done();
         });
@@ -208,7 +218,7 @@ describe("토큰 재발급을 위한 로그인", () => {
         }
 
         request.post(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             expect(res).to.cookie('accessToken');
             expect(res).to.cookie('accessToken.sig');
             cookie = res.headers['set-cookie'];
@@ -230,8 +240,8 @@ describe("회원 탈퇴", () => {
         }
 
         request.delete(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             done();
         });
-    });
+    }).slow(TIME_LIMIT.SIGNOUT).timeout(TIME_LIMIT.SIGNOUT);
 });
