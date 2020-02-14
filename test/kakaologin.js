@@ -2,6 +2,15 @@ const request = require('request');
 const expect = require('chai').use(require('chai-http')).expect;
 require('dotenv').config();
 
+const STATUS_CODE = {
+    OK: 200,
+    UNAUTHORIZED: 401
+}
+
+const TIME_LIMIT = {
+    KAKAO_LOGIN: 2000
+}
+
 /*
  * 카카오 토큰을 발급 받은 후라고 가정하고 진행
  */
@@ -20,7 +29,7 @@ describe("토큰 유효성 검증", () => {
             }
         }
         request.get(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             kakaoId = JSON.parse(body).id;
             expect(kakaoId).to.not.equal(undefined);
             done();
@@ -34,7 +43,7 @@ describe("토큰 유효성 검증", () => {
 describe("유저 정보 조회(로그인 전)", () => {
     it('401', done => {
         request.get(process.env.TEST_API + "/users", (err, res, body) => {
-            expect(res.statusCode).to.equal(401);
+            expect(res.statusCode).to.equal(STATUS_CODE.UNAUTHORIZED);
             expect(body).to.equal('You need to login.');
             done();
         });
@@ -63,13 +72,13 @@ describe("카카오 로그인 성공", () => {
         }
 
         request.post(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             expect(res).to.cookie('accessToken');
             expect(res).to.cookie('accessToken.sig');
             cookie = res.headers['set-cookie'];
             done();
         });
-    });
+    }).slow(TIME_LIMIT.KAKAO_LOGIN);
 });
 
 /*
@@ -85,7 +94,7 @@ describe("유저 정보 조회(카카오 로그인 후)", () => {
         }
 
         request.get(options, (err, res, body) => {
-            expect(res.statusCode).to.equal(200);
+            expect(res.statusCode).to.equal(STATUS_CODE.OK);
             expect(body).to.not.equal(undefined);
             done();
         });
