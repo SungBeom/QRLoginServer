@@ -1,36 +1,65 @@
-# LoginServerBP
-QR login server with nodejs
+# QRLoginServer
+QR web server with html and js  
+QR API server with nodejs
+
 
 ## Requirement
-- macOS v10.15.2
-- nodejs v12.14.0
-- yarn v1.21.1
+### For all server
+- Ubuntu 18.04.3 LTS
+### For web server
+- nodejs v8.10.0
+- npm v3.5.2
+### For API server
+- nginx v1.14.0
+### For DB server
+- mysql v5.7.28
 
-## Installation
+
+## Running Server
+1. [**Web server**](https://wiki.daumkakao.com/display/KAKAOAPI/Web+server)
+2. [**API server**](https://wiki.daumkakao.com/display/KAKAOAPI/API+server)
+3. [**DB server**](https://wiki.daumkakao.com/display/KAKAOAPI/DB+server)
+
+
+## Running Tests(in macOS)
+1. Clone the git repository and change the current folder.
 ```
-1. Clone a repository
-2. Execute a shell command in the root directory(which contains package.json)
-3. Install dependencies
-      $yarn   or   $yarn install
-4. Install sequelize-cli globally to make sequelize easier to use
-      $yarn global add sequelize-cli
+git clone https://github.com/SungBeom/QRLoginServer.git
+cd QRLoginServer
+```
+2. Install node and npm with brew.
+```
+brew install node
+```
+3. Make sure node and npm are installed.
+```
+node -v
+npm -v
+```
+4. Install node_modules.
+```
+npm install
+```
+5. Get a Kakao access token.
+To test Kakao login, you will need a Kakao Access Token.  
+Go to the [**Kakao developer site**](https://developers.kakao.com/docs/restapi/tool), log in to 'developers-sample' with your Kakao account, and get an access token.  
+
+6. Make env file for test.  
+In place of "kakao access token", you need to put the token issued above.
+```
+node src/test {kakao access token}
 ```
 
-## Sequelize-cli usage
+7. Test a three-way login.
+- Sign up & Login
 ```
-1. Make config/config.json
-      $sequeilze init
-2. Update DB information in config.json
-3. Generates a model and its migration
-      $generate --name "tableName" --attribute "columnName:dataType", ...
-4-1. Run pending migrations
-      $sequelize db:migrate
-4-2. Reverts a migration
-      $sequelize db:migrate:undo
-5. Generates a new seed file
-      $sequelize seed:generate --name "dataName"
-6-1. Run specified seeder
-      $sequelize db:seed --seed "seedName"
-6-2. Deletes data from the database
-      $sequelize db:seed:undo
+mocha test/login
+```
+- QR Login
+```
+mocha test/qrlogin
+```
+- Kakao Login
+```
+mocha test/kakaologin
 ```
