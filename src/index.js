@@ -1,5 +1,6 @@
 const Koa = require('koa');
 const Router = require('koa-router');
+const redis = require('redis');
 const bodyParser = require('koa-bodyparser');
 const cors = require('@koa/cors');
 require('dotenv').config();
@@ -7,6 +8,7 @@ require('dotenv').config();
 const app = new Koa();
 app.keys = [process.env.KOA_APP_KEY];
 const router = new Router();
+const redisClient = redis.createClient(process.env.REDIS_PORT, process.env.REDIS_IP);
 
 STATUS_CODE = {
     OK: 200,
@@ -31,6 +33,10 @@ app.use(router.routes());
 app.use(router.allowedMethods());
 
 app.listen(process.env.SERVER_PORT1, () => {
+    redisClient.get("TEST", (err, result) => {
+        if(err) console.log(err);
+        else console.log(result);
+    });
     console.log('server is listening to port ' + process.env.SERVER_PORT1);
 });
 
