@@ -9,6 +9,7 @@ const app = new Koa();
 app.keys = [process.env.KOA_APP_KEY];
 const router = new Router();
 const redisClient = redis.createClient(process.env.REDIS_PORT, process.env.REDIS_IP);
+redisClient.auth(process.env.REDIS_KEY);
 
 STATUS_CODE = {
     OK: 200,
