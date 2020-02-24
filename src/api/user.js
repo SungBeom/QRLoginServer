@@ -1,10 +1,13 @@
 const Router = require('koa-router');
+const redis = require('async-redis');
 const model = require('../database/models');
 const token = require('../lib/token');
 const crypto = require('crypto');
 require('dotenv').config();
 
 const userApi = new Router();
+const client = redis.createClient(process.env.REDIS_PORT, process.env.REDIS_IP);
+client.auth(process.env.REDIS_KEY);
 
 model.sequelize.sync().then(() => {
     console.log("DB connection success");
@@ -43,16 +46,13 @@ userApi.post('/users', async (ctx, next) => {
     const salt = crypto.randomBytes(64).toString('base64');
     const encryptedPw = crypto.pbkdf2Sync(userPw, salt, 10000, 128, 'sha512').toString('base64');
 
+    const value = { userPw: encryptedPw, salt, name, engName };
+
     // DB에 유저 정보 등록
-    await model.sequelize.models.Users.create({
-        userId: userId, userPw: encryptedPw, salt: salt, name: name, engName: engName
-    }).then(() => {
-        console.log("[User]Create Success: Sign Up");
-        ctx.status = STATUS_CODE.OK;
-    }).catch(err => {
-        console.log(err);
-        ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-    });
+    await client.hmset(userId, value);
+
+    console.log("[User]Create Success: Sign Up");
+    ctx.status = STATUS_CODE.OK;
 });
 
 /*
@@ -64,18 +64,13 @@ userApi.post('/users', async (ctx, next) => {
 userApi.get('/users/ids/:userId', async (ctx, next) => {
     const { userId } = ctx.params;
 
-    await model.sequelize.models.Users.findOne({
-        where: { userId: userId }
-    }).then(result => {
-        console.log("[User]Read Success: Duplicate Check");
+    const value = await client.exists(userId);
 
-        // 유저 ID가 중복된 경우 1, 중복되지 않은 경우 0을 body에 넣어줌
-        result ? ctx.body = 1 : ctx.body = 0;
-        ctx.status = STATUS_CODE.OK;
-    }).catch(err => {
-        console.log(err);
-        ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-    })
+    console.log("[User]Read Success: Duplicate Check");
+
+    // 유저 ID가 중복된 경우 1, 중복되지 않은 경우 0을 body에 넣어줌
+    ctx.body = value;
+    ctx.status = STATUS_CODE.OK;
 });
 
 /*
@@ -104,33 +99,27 @@ userApi.get('/users', async (ctx, next) => {
             ctx.status = STATUS_CODE.UNAUTHORIZED;
         }
 
-        await model.sequelize.models.Users.findOne({
-            where: { userId: decodedToken.userId }
-        }).then(result => {
+        const result = await client.hgetall(decodedToken.userId);
 
-            // 존재하지 않는 유저 ID 조회(토큰 없이 불가능)
-            if (result === null) {
-                console.log("[User]Read Failed: Nonexistent Id");
-                ctx.body = "There is no user with that Id.";
-                ctx.status = STATUS_CODE.FORBIDDEN;
-            }
+        // 존재하지 않는 유저 ID 조회(토큰 없이 불가능)
+        if (result === null) {
+            console.log("[User]Read Failed: Nonexistent Id");
+            ctx.body = "There is no user with that Id.";
+            ctx.status = STATUS_CODE.FORBIDDEN;
+        }
 
-            // 정보 조회 성공
-            else {
-                console.log("[User]Read Success: Search Info");
-                let searchInfo = {};
+        // 정보 조회 성공
+        else {
+            console.log("[User]Read Success: Search Info");
+            let searchInfo = {};
 
-                searchInfo.userId = result.dataValues.userId;
-                searchInfo.name = result.dataValues.name;
-                searchInfo.engName = result.dataValues.engName;
+            searchInfo.userId = decodedToken.userId;
+            searchInfo.name = result.name;
+            searchInfo.engName = result.engName;
 
-                ctx.body = searchInfo;
-                ctx.status = STATUS_CODE.OK;
-            }
-        }).catch(err => {
-            console.log(err);
-            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-        });
+            ctx.body = searchInfo;
+            ctx.status = STATUS_CODE.OK;
+        }
     }
 });
 
@@ -165,18 +154,13 @@ userApi.put('/users', async (ctx, next) => {
         const salt = crypto.randomBytes(64).toString('base64');
         const encryptedPw = crypto.pbkdf2Sync(userPw, salt, 10000, 128, 'sha512').toString('base64');
 
+        const value = { userPw: encryptedPw, salt, name, engName };
+
         // DB의 유저 정보 갱신
-        await model.sequelize.models.Users.update({
-            userPw: encryptedPw, salt: salt, name: name, engName: engName
-        }, {
-            where: { userId: decodedToken.userId }
-        }).then(() => {
-            console.log("[User]Update Success: Change Info");
-            ctx.status = STATUS_CODE.OK;
-        }).catch(err => {
-            console.log(err);
-            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-        });
+        await client.hmset(decodedToken.userId, value);
+
+        console.log("[User]Update Success: Change Info");
+        ctx.status = STATUS_CODE.OK;
     }
 });
 
@@ -211,15 +195,10 @@ userApi.delete('/users', async (ctx, next) => {
         ctx.cookies.set('accessToken.sig', null);
 
         // DB에서 유저 정보 제거
-        await model.sequelize.models.Users.destroy({
-            where: { userId: decodedToken.userId }
-        }).then(() => {
-            console.log("[User]Delete success: Sign Out");
-            ctx.status = STATUS_CODE.OK;
-        }).catch(err => {
-            console.log(err);
-            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-        });
+        await client.del(decodedToken.userId);
+
+        console.log("[User]Delete success: Sign Out");
+        ctx.status = STATUS_CODE.OK;
     }
 });
 
