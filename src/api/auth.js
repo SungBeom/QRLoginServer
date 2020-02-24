@@ -1,4 +1,5 @@
 const Router = require('koa-router');
+const redis = require('async-redis');
 const model = require('../database/models');
 const token = require('../lib/token');
 const fetch = require('node-fetch');
@@ -6,6 +7,8 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 const authApi = new Router();
+const client = redis.createClient(process.env.REDIS_PORT, process.env.REDIS_IP);
+client.auth(process.env.REDIS_KEY);
 
 model.sequelize.sync().then(() => {
     console.log("DB connection success");
@@ -73,70 +76,68 @@ authApi.post('/auth', async (ctx, next) => {
             const salt = crypto.randomBytes(64).toString('base64');
             const tempPw = crypto.pbkdf2Sync(temp, salt, 10000, 128, 'sha512').toString('base64');
 
+            const value = { userPw: tempPw, salt, name: nickName, engName: nickName };
+
             // 최초 로그인 시 카카오 계정 정보를 이용해 DB에 사용자 등록
-            await model.sequelize.models.Users.findOrCreate({
-                where: { userId: userId },
-                defaults: { userId: userId, userPw: tempPw, salt: salt, name: nickName, engName: nickName }
-            }).then(() => {
+            await client.hmset(userId, value);
+
+            console.log("[Auth]Create Success: Token Created");
+            const accessToken = token.generateToken({ userId: userId });
+
+            // access token 발급
+            ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
+            ctx.status = STATUS_CODE.OK;
+        }
+    }
+
+    // ID + password 방식의 로그인
+    else if (userId !== "" && userPw !== "") {
+        const value = await client.hgetall(userId);
+
+        // 존재하지 않는 ID
+        if (value === null) {
+            console.log("[Auth]Create Failed: Incorrect ID/Password");
+            ctx.body = "The ID or password is incorrect.";
+            ctx.status = STATUS_CODE.UNAUTHORIZED;
+        }
+        else {
+            const encryptedPw = crypto.pbkdf2Sync(userPw, value.salt, 10000, 128, 'sha512').toString('base64');
+
+            // 비밀번호 불일치
+            if (value.userPw !== encryptedPw) {
+                console.log("[Auth]Create Failed: Incorrect ID/Password");
+                ctx.body = "The ID or password is incorrect.";
+                ctx.status = STATUS_CODE.UNAUTHORIZED;
+            }
+
+            // 로그인 성공
+            else {
                 console.log("[Auth]Create Success: Token Created");
                 const accessToken = token.generateToken({ userId: userId });
 
                 // access token 발급
                 ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
                 ctx.status = STATUS_CODE.OK;
-            }).catch(err => {
-                console.log(err);
-                ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-            });
+            }
         }
-    }
-
-    // ID + password 방식의 로그인
-    else if (userId !== "" && userPw !== "") {
-        await model.sequelize.models.Users.findOne({
-            where: { userId: userId }
-        }).then(result => {
-
-            // 존재하지 않는 ID
-            if (result === null) {
-                console.log("[Auth]Create Failed: Incorrect ID/Password");
-                ctx.body = "The ID or password is incorrect.";
-                ctx.status = STATUS_CODE.UNAUTHORIZED;
-            }
-            else {
-                const encryptedPw = crypto.pbkdf2Sync(userPw, result.salt, 10000, 128, 'sha512').toString('base64');
-
-                // 비밀번호 불일치
-                if (result.userPw !== encryptedPw) {
-                    console.log("[Auth]Create Failed: Incorrect ID/Password");
-                    ctx.body = "The ID or password is incorrect.";
-                    ctx.status = STATUS_CODE.UNAUTHORIZED;
-                }
-
-                // 로그인 성공
-                else {
-                    console.log("[Auth]Create Success: Token Created");
-                    const accessToken = token.generateToken({ userId: userId });
-    
-                    // access token 발급
-                    ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
-                    ctx.status = STATUS_CODE.OK;
-                }
-            }
-        }).catch(err => {
-            console.log(err);
-            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-        });
     }
 
     // QR 코드를 이용한 로그인
     else if (codeData !== "") {
-        await model.sequelize.models.QRCodes.findOne({
-            where: { codeData: codeData }
-        }).then(async result => {
-            
+        const result = await client.get(codeData);
+
+        // QR 코드가 없는 경우
+        if (result === null) {
+            console.log("[Auth]Create Failed: Invalid QR Code");
+            ctx.body = "Invalid qr code.";
+            ctx.status = STATUS_CODE.FORBIDDEN;
+        }
+
+        else {
+            const value = await client.exists(result);
+
             // 누군가가 비정상적인 접근 시도를 하는 경우
-            if (!result || result.userId === null) {
+            if (value === 0) {
                 console.log("[Auth]Create Failed: Invalid QR Code");
                 ctx.body = "Invalid qr code.";
                 ctx.status = STATUS_CODE.FORBIDDEN;
@@ -146,24 +147,16 @@ authApi.post('/auth', async (ctx, next) => {
             else {
 
                 // qr code 정보 폐기
-                await model.sequelize.models.QRCodes.destroy({
-                    where: { codeData: codeData }
-                }).then(() => {
-                    console.log("[Auth]Create Success: Token Created");
-                    const accessToken = token.generateToken({ userId: result.userId });
+                await client.del(codeData);
 
-                    // access token 발급
-                    ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
-                    ctx.status = STATUS_CODE.OK;
-                }).catch(err => {
-                    console.log(err);
-                    ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-                });
+                console.log("[Auth]Create Success: Token Created");
+                const accessToken = token.generateToken({ userId: result });
+
+                // access token 발급
+                ctx.cookies.set("accessToken", accessToken, { maxAge: 1000 * 60 * 60 * 21, sameSite: "Strict", overwrite: true });
+                ctx.status = STATUS_CODE.OK;
             }
-        }).catch(err => {
-            console.log(err);
-            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-        });
+        }
     }
 });
 
@@ -221,28 +214,21 @@ authApi.get('/auth', async (ctx, next) => {
             ctx.status = STATUS_CODE.UNAUTHORIZED;
         }
 
-        await model.sequelize.models.Users.findOne({
-            attribute: [ 'name' ],
-            where: { userId: decodedToken.userId }
-        }).then(result => {
+        const result = await client.hgetall(decodedToken.userId);
 
-            // 존재하지 않는 유저 ID(토큰 없이 불가능)
-            if (result === null) {
-                console.log("[Auth]Read Failed: Nonexistent Id");
-                ctx.body = "There is no user with that Id.";
-                ctx.status = STATUS_CODE.FORBIDDEN;
-            }
+        // 존재하지 않는 유저 ID(토큰 없이 불가능)
+        if (result === null) {
+            console.log("[Auth]Read Failed: Nonexistent Id");
+            ctx.body = "There is no user with that Id.";
+            ctx.status = STATUS_CODE.FORBIDDEN;
+        }
 
-            // ID에 등록된 이름 검색 성공
-            else {
-                console.log("[Auth]Read Success: Login");
-                ctx.body = "Welcome " + result.name + "!";
-                ctx.status = STATUS_CODE.OK;
-            }
-        }).catch(err => {
-            console.log(err);
-            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-        });
+        // ID에 등록된 이름 검색 성공
+        else {
+            console.log("[Auth]Read Success: Login");
+            ctx.body = "Welcome " + result.name + "!";
+            ctx.status = STATUS_CODE.OK;
+        }
     }
 });
 
