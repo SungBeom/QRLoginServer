@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@koa/cors": "2",
+    "async-redis": "^1.1.7",
     "dotenv": "^8.2.0",
     "jsonwebtoken": "^8.5.1",
     "koa": "^2.11.0",
