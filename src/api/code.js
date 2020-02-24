@@ -1,10 +1,13 @@
 const Router = require('koa-router');
+const redis = require('async-redis');
 const model = require('../database/models');
 const token = require('../lib/token');
 const uuidv4 = require('uuid/v4');
 require('dotenv').config();
 
 const codeApi = new Router();
+const client = redis.createClient(process.env.REDIS_PORT, process.env.REDIS_IP);
+client.auth(process.env.REDIS_KEY);
 
 model.sequelize.sync().then(() => {
     console.log("DB connection success");
@@ -40,16 +43,11 @@ codeApi.post('/codes', async (ctx, next) => {
     const codeData = uuidv4();
 
     // DB에 QR Code 정보 등록
-    await model.sequelize.models.QRCodes.create({
-        codeData: codeData
-    }).then(result => {
-        console.log("[QR]Create Success: QR Code Created");
-        ctx.body = { codeData: codeData };
-        ctx.status = STATUS_CODE.OK;
-    }).catch(err => {
-        console.log(err);
-        ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-    });
+    await client.set(codeData, "");
+
+    console.log("[QR]Create Success: QR Code Created");
+    ctx.body = { codeData };
+    ctx.status = STATUS_CODE.OK;
 });
 
 /*
@@ -79,38 +77,25 @@ codeApi.get('/codes/:codeData', async (ctx, next) => {
             ctx.body = "Token expired."
             ctx.status = STATUS_CODE.UNAUTHORIZED;
         }
-        
-        await model.sequelize.models.QRCodes.findOne({
-            where: { codeData: codeData }
-        }).then(async result => {
 
-            // QR code가 존재하지 않는 경우
-            if (result === null) {
-                console.log("[QR]Update Failed: Invalid QR Code");
-                ctx.body = "Invalid qr code.";
-                ctx.status = STATUS_CODE.NOT_FOUND;
-            }
+        const result = await client.get(codeData);
 
-            // QR 로그인 성공
-            else {
+        // QR code가 존재하지 않는 경우
+        if (result === null) {
+            console.log("[QR]Update Failed: Invalid QR Code");
+            ctx.body = "Invalid qr code.";
+            ctx.status = STATUS_CODE.NOT_FOUND;
+        }
 
-                // DB에 등록된 QR Code 정보에 해당 QR Code를 인식한 유저 정보를 추가
-                await model.sequelize.models.QRCodes.update({
-                    userId: decodedToken.userId
-                }, {
-                    where: { codeData: codeData }
-                }).then(() => {
-                    console.log("[QR]Update Success: QR Login");
-                    ctx.status = STATUS_CODE.OK;
-                }).catch(err => {
-                    console.log(err);
-                    ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-                });
-            }
-        }).catch(err => {
-            console.log(err);
-            ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-        });
+        // QR 로그인 성공
+        else {
+
+            // DB에 등록된 QR Code 정보에 해당 QR Code를 인식한 유저 정보를 추가
+            await client.set(codeData, decodedToken.userId);
+
+            console.log("[QR]Update Success: QR Login");
+            ctx.status = STATUS_CODE.OK;
+        }
     }
 });
 
@@ -132,26 +117,18 @@ codeApi.put('/codes/:codeData', async (ctx, next) => {
 
     const { codeData } = ctx.params;
 
-    await model.sequelize.models.QRCodes.findOne({
-        where: { codeData: codeData },
-        attributes: [ 'userId' ]
-    }).then(result => {
+    const result = await client.get(codeData);
 
-        // QR Code가 없거나 아직 어떤 사용자도 등록되지 않은 경우
-        if (result === null || result.userId === null) {
-            ctx.body = { userId: null };
-        }
+    if (result === null || result === "") {
+        ctx.body = { userId: null };
+    }
 
-        // 특정 사용자가 QR Code를 인식하여 해당 유저의 정보로 등록된 경우
-        else {
-            ctx.body = { userId: result.userId };
-        }
+    // 특정 사용자가 QR Code를 인식하여 해당 유저의 정보로 등록된 경우
+    else {
+        ctx.body = { userId: result };
+    }
 
-        ctx.status = STATUS_CODE.OK;
-    }).catch(err => {
-        console.log(err);
-        ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-    });
+    ctx.status = STATUS_CODE.OK;
 });
 
 /*
@@ -172,15 +149,10 @@ codeApi.delete('/codes/:codeData', async (ctx, next) => {
     const { codeData } = ctx.params;
 
     // DB에서 QR Code 정보 제거
-    await model.sequelize.models.QRCodes.destroy({
-        where: { codeData: codeData }
-    }).then(() => {
-        console.log("[QR]Delete Success: QR Code Deleted");
-        ctx.status = STATUS_CODE.OK;
-    }).catch(err => {
-        console.log(err);
-        ctx.status = STATUS_CODE.INTERNET_SERVER_ERROR;
-    });
+    await client.del(codeData);
+
+    console.log("[QR]Delete Success: QR Code Deleted");
+    ctx.status = STATUS_CODE.OK;
 });
 
 module.exports = codeApi;
