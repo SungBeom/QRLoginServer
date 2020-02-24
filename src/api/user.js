@@ -1,6 +1,5 @@
 const Router = require('koa-router');
 const redis = require('async-redis');
-const model = require('../database/models');
 const token = require('../lib/token');
 const crypto = require('crypto');
 require('dotenv').config();
@@ -8,13 +7,6 @@ require('dotenv').config();
 const userApi = new Router();
 const client = redis.createClient(process.env.REDIS_PORT, process.env.REDIS_IP);
 client.auth(process.env.REDIS_KEY);
-
-model.sequelize.sync().then(() => {
-    console.log("DB connection success");
-}).catch(err => {
-    console.log("DB connection failed");
-    console.log(err);
-});
 
 /*
  * User 관련 API

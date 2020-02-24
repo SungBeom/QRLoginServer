@@ -1,6 +1,5 @@
 const Router = require('koa-router');
 const redis = require('async-redis');
-const model = require('../database/models');
 const token = require('../lib/token');
 const uuidv4 = require('uuid/v4');
 require('dotenv').config();
@@ -8,13 +7,6 @@ require('dotenv').config();
 const codeApi = new Router();
 const client = redis.createClient(process.env.REDIS_PORT, process.env.REDIS_IP);
 client.auth(process.env.REDIS_KEY);
-
-model.sequelize.sync().then(() => {
-    console.log("DB connection success");
-}).catch(err => {
-    console.log("DB connection failed");
-    console.log(err);
-});
 
 /*
  * QR 관련 API
