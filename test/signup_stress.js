@@ -25,7 +25,7 @@ let start = new Date().getTime();
 /*
  * 회원 가입 700회
  */
-describe("스트레스 테스트", () => {
+describe("회원 가입 스트레스 테스트", () => {
     tests.forEach(value => {
         it(`회원 가입 ${value}`, () => {
             const options = {
