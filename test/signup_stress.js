@@ -16,14 +16,14 @@ const name = "name";
 const engName = "engName";
 
 let tests = [];
-for(let i = 1; i <= 700; i++) {
+for(let i = 1; i <= 800; i++) {
     tests.push(i);
 }
 
 let start = new Date().getTime();
 
 /*
- * 회원 가입 700회
+ * 회원 가입 800회
  */
 describe("회원 가입 스트레스 테스트", () => {
     tests.forEach(value => {

@@ -10,14 +10,14 @@ const userId = "tId";
 const userPw = "tPw";
 
 let tests = [];
-for(let i = 1; i <= 700; i++) {
+for(let i = 1; i <= 800; i++) {
     tests.push(i);
 }
 
 let start = new Date().getTime();
 
 /*
- * 로그인 성공 및 토큰 발급 700회
+ * 로그인 성공 및 토큰 발급 800회
  */
 describe("인증 스트레스 테스트", () => {
     tests.forEach(value => {

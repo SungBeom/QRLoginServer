@@ -9,7 +9,7 @@ const TIME_LIMIT = {
 const TIMER_TICK = 10;
 
 let tests = [];
-for(let i = 1; i <= 300; i++) {
+for(let i = 1; i <= 400; i++) {
     tests.push(i);
 }
 
@@ -19,7 +19,7 @@ let start = new Date().getTime();
 let middle;
 
 /*
- * QR 코드 생성 및 polling 테스트(총 300개 각 QR마다 초당 1회씩 10회)
+ * QR 코드 생성 및 polling 테스트(총 400개 각 QR마다 초당 1회씩 10회)
  */
 describe("QR Code 스트레스 테스트", () => {
     tests.forEach(value => {
