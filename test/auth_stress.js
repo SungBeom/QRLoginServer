@@ -10,22 +10,22 @@ const userId = "tId";
 const userPw = "tPw";
 
 let tests = [];
-for(let i = 1; i <= 3000; i++) {
+for(let i = 1; i <= 700; i++) {
     tests.push(i);
 }
 
 let start = new Date().getTime();
 
 /*
- * 로그인 성공 및 토큰 발급 3000회
+ * 로그인 성공 및 토큰 발급 700회
  */
 describe("인증 스트레스 테스트", () => {
     tests.forEach(value => {
         it(`토큰 발급 ${value}`, () => {
             const options = {
-                url: "http://localhost:" + process.env.SERVER_PORT1 + "/auth",
+                url: process.env.TEST_API + "/auth",
                 headers: {
-                    'referer': process.env.LOGIN_REFERER
+                    'referer': process.env.TEST_LOGIN_REFERER
                 },
                 body: {
                     'userId': userId,
