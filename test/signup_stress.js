@@ -16,22 +16,22 @@ const name = "name";
 const engName = "engName";
 
 let tests = [];
-for(let i = 1; i <= 5000; i++) {
+for(let i = 1; i <= 800; i++) {
     tests.push(i);
 }
 
 let start = new Date().getTime();
 
 /*
- * 회원 가입 5000회
+ * 회원 가입 800회
  */
 describe("회원 가입 스트레스 테스트", () => {
     tests.forEach(value => {
         it(`회원 가입 ${value}`, () => {
             const options = {
-                url: "http://localhost:" + process.env.SERVER_PORT1 + "/users",
+                url: process.env.TEST_API + "/users",
                 headers: {
-                    'referer': process.env.SIGNUP_REFERER
+                    'referer': process.env.TEST_SIGNUP_REFERER
                 },
                 body: {
                     'userId': userId + value,
